@@ -1,0 +1,9 @@
+.directory
+DerivedDataCache
+Intermediate
+Saved
+Binaries
+*.suo
+*.sdf
+*.opensdf
+*.sln
