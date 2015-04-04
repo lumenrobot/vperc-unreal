@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="author" content="Sigit Ari Wijanarko, Hendy Irawan" />
+
+
+<title>2D to 3D Reconstruction for Virtual Perception</title>
+
+<script src="3dreconstruction_files/jquery-1.11.0/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="3dreconstruction_files/bootstrap-3.3.1/css/bootstrap.min.css" rel="stylesheet" />
+<script src="3dreconstruction_files/bootstrap-3.3.1/js/bootstrap.min.js"></script>
+<script src="3dreconstruction_files/bootstrap-3.3.1/shim/html5shiv.min.js"></script>
+<script src="3dreconstruction_files/bootstrap-3.3.1/shim/respond.min.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<link rel="stylesheet"
+      href="3dreconstruction_files/highlight/default.css"
+      type="text/css" />
+<script src="3dreconstruction_files/highlight/highlight.js"></script>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img { 
+  max-width:100%; 
+  height: auto; 
+}
+</style>
+<div class="container-fluid main-container">
+
+
+<div id="header">
+<h1 class="title">2D to 3D Reconstruction for Virtual Perception</h1>
+<h4 class="author"><em>Sigit Ari Wijanarko, Hendy Irawan</em></h4>
+<h4 class="date"><em>Saturday, April 04, 2015</em></h4>
+</div>
+
+
+<p>Formula: <a href="http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html" class="uri">http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html</a></p>
+<pre><code>s * UV = CM * Rt * XYZ</code></pre>
+<p>s adalah pembagi dari UV, bila UV = (20, 10, 2) maka u = 20/2 = 10, v = 10/2 = 5.</p>
+<pre><code>CM = [ fx 0   cx ;
+       0  -fy cy ;
+       0  0   1  ]</code></pre>
+<p>-fy diminuskan karena di gambar 2D, pojok atas adalah v=0 dan bawah adalah misalnya v=240 (untuk dimensi 320x240); padahal di 3D bawah adalah y&lt;0 dan atas adalah y&gt;0.</p>
+<p>Untuk mendapatkan fx dan fy, kita menentukan dulu focal length dan ukuran “sensor”. Anggap focal length (F) 35mm. Dan sensor 36mm x 24mm (Full-frame). Trus resolusi gambar 320x240.</p>
+<ul>
+<li>sx = image width(px) / sensor width(mm) = 320px / 36mm = 8.9px/mm</li>
+<li>sy = image height(px) / sensor height(mm) = 240px / 24mm = 10px/mm</li>
+<li>kalo square pixel, harusnya sx == sy</li>
+</ul>
+<p>Maka</p>
+<ul>
+<li>fx = F * sx = 35mm * 8.9 = 311.1 px</li>
+<li>fy = F * sy = 35mm * 10 = 350 px</li>
+<li>cx (image horizontal center) = imageWidth / 2</li>
+<li>cy (image vertical center) = imageHeight / 2</li>
+</ul>
+<p>Maka</p>
+<pre class="r"><code># 35mm lens on Sony Alpha 7r
+focalLength &lt;- 35 #mm
+imageWidth &lt;- 320 #px
+imageHeight &lt;- 240 #Px
+sensorWidth &lt;- 36 #mm
+sensorHeight &lt;- 24 #mm
+centerX &lt;- imageWidth / 2 #px
+centerY &lt;- imageHeight / 2 #px
+CM &lt;- matrix(c(focalLength * imageWidth / sensorWidth, 0, centerX,
+               0, -focalLength * imageHeight / sensorHeight, centerY,
+               0, 0, 1), ncol=3, byrow=TRUE)
+CM</code></pre>
+<pre><code>##          [,1] [,2] [,3]
+## [1,] 311.1111    0  160
+## [2,]   0.0000 -350  120
+## [3,]   0.0000    0    1</code></pre>
+<p>Contoh: Samsung Galaxy S4:</p>
+<ul>
+<li>Aperture size F2.2</li>
+<li>Focal length (35mm equivalent): 31 mm –&gt; harus dikonversi ke focal length fisik = 4.3mm (<a href="http://www.digified.net/focallength/" class="uri">http://www.digified.net/focallength/</a>)</li>
+<li>Camera sensor size: 1/3.06&quot; (diagonal: 0.3268&quot; = 8.3mm, dimensi: 6.64mm x 4.98mm)</li>
+<li>Pixel size: 1.14 µm</li>
+</ul>
+<pre class="r"><code># Samsung Galaxy S4
+focalLength &lt;- 4.3 #mm
+imageWidth &lt;- 320 #px
+imageHeight &lt;- 240 #px
+sensorWidth &lt;- 6.64 #mm
+sensorHeight &lt;- 4.98 #mm
+centerX &lt;- imageWidth / 2 #px
+centerY &lt;- imageHeight / 2 #px
+CM &lt;- matrix(c(focalLength * imageWidth / sensorWidth, 0, centerX,
+               0, -focalLength * imageHeight / sensorHeight, centerY,
+               0, 0, 1), ncol=3, byrow=TRUE)
+CM</code></pre>
+<pre><code>##          [,1]      [,2] [,3]
+## [1,] 207.2289    0.0000  160
+## [2,]   0.0000 -207.2289  120
+## [3,]   0.0000    0.0000    1</code></pre>
+<p>Kalau udah punya CM maka perlu bikin joint rotation-translation matrix. Ini Hendy agak bingung jadi biarin Sigit aja yang pusing :p</p>
+<pre class="r"><code>theta &lt;- 0*pi
+t &lt;- c(0, 0, 0)
+names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
+t</code></pre>
+<pre><code>## x y z 
+## 0 0 0</code></pre>
+<pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
+               sin(theta),  cos(theta), 0, t[&#39;y&#39;],
+               0,           0,          1, t[&#39;z&#39;]),
+             ncol=4, byrow=TRUE)
+Rt</code></pre>
+<pre><code>##      [,1] [,2] [,3] [,4]
+## [1,]    1    0    0    0
+## [2,]    0    1    0    0
+## [3,]    0    0    1    0</code></pre>
+<p>Dari sini kita bisa memproyeksikan sebuah titik 3D ke 2D. Kalau benar, maka untuk dari 2D ke 3D ya tinggal dibalik.</p>
+<pre class="r"><code>                # x    y    z   1
+XYZ &lt;- matrix(c(  0,   0,0.01,  1, # persis di tengah
+                  0,   0,   1,  1, # persis di tengah, agak ke depan
+                 -1,   0,   1,  1, # depan, agak ke kiri
+                  3,   0,   1,  1, # depan, lebih ke kanan
+                  0,   1,   1,  1, # depan, atas
+                  0,  -3,   1,  1, # depan, lebih ke bawah
+                 -1,  -3,   1,  1, # depan, kiri atas
+                  2,   4,   1,  1, # depan, kanan atas
+                  0,   0,   5,  1, # persis di tengah, depan banget
+                 -1,   0,   5,  1, # depan banget, agak ke kiri
+                  3,   0,   5,  1, # depan banget, lebih ke kanan
+                  0,   1,   5,  1, # depan banget, atas
+                  0,  -3,   5,  1, # depan banget, lebih ke bawah
+                 -1,  -3,   5,  1, # depan banget, kiri atas
+                  2,   4,   5,  1),# depan banget, kanan atas
+              ncol=4, byrow=TRUE)
+colnames(XYZ) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;, &#39;1&#39;)
+XYZ</code></pre>
+<pre><code>##        x  y    z 1
+##  [1,]  0  0 0.01 1
+##  [2,]  0  0 1.00 1
+##  [3,] -1  0 1.00 1
+##  [4,]  3  0 1.00 1
+##  [5,]  0  1 1.00 1
+##  [6,]  0 -3 1.00 1
+##  [7,] -1 -3 1.00 1
+##  [8,]  2  4 1.00 1
+##  [9,]  0  0 5.00 1
+## [10,] -1  0 5.00 1
+## [11,]  3  0 5.00 1
+## [12,]  0  1 5.00 1
+## [13,]  0 -3 5.00 1
+## [14,] -1 -3 5.00 1
+## [15,]  2  4 5.00 1</code></pre>
+<p>Tinggal dikalikan dech:</p>
+<pre class="r"><code>sUV &lt;- t(CM %*% Rt %*% XYZ[4,]) # point ke-4
+names(sUV) &lt;- c(&#39;u&#39;, &#39;v&#39;, &#39;s&#39;)
+sUV</code></pre>
+<pre><code>##          [,1] [,2] [,3]
+## [1,] 781.6867  120    1
+## attr(,&quot;names&quot;)
+## [1] &quot;u&quot; &quot;v&quot; &quot;s&quot;</code></pre>
+<pre class="r"><code>if (sUV[&#39;s&#39;] != 0) UV &lt;- sUV / sUV[&#39;s&#39;] else UV &lt;- sUV
+UV</code></pre>
+<pre><code>##          [,1] [,2] [,3]
+## [1,] 781.6867  120    1</code></pre>
+<p>Atau ramean:</p>
+<pre class="r"><code>sUV &lt;- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
+sUV</code></pre>
+<pre><code>##               su         sv    s
+##  [1,]    1.60000    1.20000 0.01
+##  [2,]  160.00000  120.00000 1.00
+##  [3,]  -47.22892  120.00000 1.00
+##  [4,]  781.68675  120.00000 1.00
+##  [5,]  160.00000  -87.22892 1.00
+##  [6,]  160.00000  741.68675 1.00
+##  [7,]  -47.22892  741.68675 1.00
+##  [8,]  574.45783 -708.91566 1.00
+##  [9,]  800.00000  600.00000 5.00
+## [10,]  592.77108  600.00000 5.00
+## [11,] 1421.68675  600.00000 5.00
+## [12,]  800.00000  392.77108 5.00
+## [13,]  800.00000 1221.68675 5.00
+## [14,]  592.77108 1221.68675 5.00
+## [15,] 1214.45783 -228.91566 5.00</code></pre>
+<pre class="r"><code>UV &lt;- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) &lt;- c(&#39;u&#39;, &#39;v&#39;, &#39;s&#39;)
+UV[,&#39;u&#39;] &lt;- sUV[,&#39;su&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;v&#39;] &lt;- sUV[,&#39;sv&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;s&#39;] &lt;- sUV[,&#39;s&#39;]
+UV</code></pre>
+<pre><code>##               u          v    s
+##  [1,] 160.00000  120.00000 0.01
+##  [2,] 160.00000  120.00000 1.00
+##  [3,] -47.22892  120.00000 1.00
+##  [4,] 781.68675  120.00000 1.00
+##  [5,] 160.00000  -87.22892 1.00
+##  [6,] 160.00000  741.68675 1.00
+##  [7,] -47.22892  741.68675 1.00
+##  [8,] 574.45783 -708.91566 1.00
+##  [9,] 160.00000  120.00000 5.00
+## [10,] 118.55422  120.00000 5.00
+## [11,] 284.33735  120.00000 5.00
+## [12,] 160.00000   78.55422 5.00
+## [13,] 160.00000  244.33735 5.00
+## [14,] 118.55422  244.33735 5.00
+## [15,] 242.89157  -45.78313 5.00</code></pre>
+<p>Yuk coba kita plot.</p>
+<pre class="r"><code>library(ggplot2)
+df &lt;- data.frame(UV)
+df$id &lt;- rownames(df)
+df$salpha &lt;- min(max(df$s/5, 0), 1)
+df$dsize &lt;- pmin(10/df$s, 20)
+df</code></pre>
+<pre><code>##            u          v    s id salpha dsize
+## 1  160.00000  120.00000 0.01  1      1    20
+## 2  160.00000  120.00000 1.00  2      1    10
+## 3  -47.22892  120.00000 1.00  3      1    10
+## 4  781.68675  120.00000 1.00  4      1    10
+## 5  160.00000  -87.22892 1.00  5      1    10
+## 6  160.00000  741.68675 1.00  6      1    10
+## 7  -47.22892  741.68675 1.00  7      1    10
+## 8  574.45783 -708.91566 1.00  8      1    10
+## 9  160.00000  120.00000 5.00  9      1     2
+## 10 118.55422  120.00000 5.00 10      1     2
+## 11 284.33735  120.00000 5.00 11      1     2
+## 12 160.00000   78.55422 5.00 12      1     2
+## 13 160.00000  244.33735 5.00 13      1     2
+## 14 118.55422  244.33735 5.00 14      1     2
+## 15 242.89157  -45.78313 5.00 15      1     2</code></pre>
+<pre class="r"><code>ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_text(aes(label=id, color=id)) + #,size=dsize
+  scale_y_reverse() +
+  ggtitle(&#39;Note that image range is (0,0)..(320,240), and point ke(n) = ke(n+7) cuma beda z&#39;)</code></pre>
+<p><img src="3dreconstruction_files/figure-html/unnamed-chunk-7-1.png" title="" alt="" width="672" /></p>
+<p>Experimen apabila Rt diganti sedikit:</p>
+<pre class="r"><code>t &lt;- c(1, 0, 0)
+names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
+t</code></pre>
+<pre><code>## x y z 
+## 1 0 0</code></pre>
+<pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
+               sin(theta),  cos(theta), 0, t[&#39;y&#39;],
+               0,           0,          1, t[&#39;z&#39;]),
+             ncol=4, byrow=TRUE)
+Rt</code></pre>
+<pre><code>##      [,1] [,2] [,3] [,4]
+## [1,]    1    0    0    1
+## [2,]    0    1    0    0
+## [3,]    0    0    1    0</code></pre>
+<pre class="r"><code># ramean
+sUV &lt;- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
+#sUV
+UV &lt;- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) &lt;- c(&#39;u&#39;, &#39;v&#39;, &#39;s&#39;)
+UV[,&#39;u&#39;] &lt;- sUV[,&#39;su&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;v&#39;] &lt;- sUV[,&#39;sv&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;s&#39;] &lt;- sUV[,&#39;s&#39;]
+#UV
+
+# plot
+library(ggplot2)
+df &lt;- data.frame(UV)
+df</code></pre>
+<pre><code>##             u          v    s
+## 1  20882.8916  120.00000 0.01
+## 2    367.2289  120.00000 1.00
+## 3    160.0000  120.00000 1.00
+## 4    988.9157  120.00000 1.00
+## 5    367.2289  -87.22892 1.00
+## 6    367.2289  741.68675 1.00
+## 7    160.0000  741.68675 1.00
+## 8    781.6867 -708.91566 1.00
+## 9    201.4458  120.00000 5.00
+## 10   160.0000  120.00000 5.00
+## 11   325.7831  120.00000 5.00
+## 12   201.4458   78.55422 5.00
+## 13   201.4458  244.33735 5.00
+## 14   160.0000  244.33735 5.00
+## 15   284.3373  -45.78313 5.00</code></pre>
+<pre class="r"><code>ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_text(label=rownames(df), color=rownames(df)) +
+  scale_y_reverse() +
+  ggtitle(&#39;Note that image range is (0,0)..(320,240), and point ke(n) = ke(n+7) cuma beda z&#39;)</code></pre>
+<p><img src="3dreconstruction_files/figure-html/unnamed-chunk-8-1.png" title="" alt="" width="672" /></p>
+<div id="memplot-lantai" class="section level2">
+<h2>Memplot ‘lantai’</h2>
+<pre class="r"><code># create 100 lattice points (10x10) spanning from X=-2..+2 and Z =0..4, Y constant = -1
+XYZ &lt;- matrix(nrow = 100, ncol=4)
+colnames(XYZ) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;, &#39;dummy&#39;)
+for (i in 0:9) {
+  for (j in 0:9) {
+    x &lt;- -2 + i*0.4
+    y &lt;- -1
+    z &lt;- 0 + j*0.4
+    XYZ[i * 10 + j + 1,] &lt;- c(x, y, z, 1)
+  }
+}
+XYZ</code></pre>
+<pre><code>##           x  y   z dummy
+##   [1,] -2.0 -1 0.0     1
+##   [2,] -2.0 -1 0.4     1
+##   [3,] -2.0 -1 0.8     1
+##   [4,] -2.0 -1 1.2     1
+##   [5,] -2.0 -1 1.6     1
+##   [6,] -2.0 -1 2.0     1
+##   [7,] -2.0 -1 2.4     1
+##   [8,] -2.0 -1 2.8     1
+##   [9,] -2.0 -1 3.2     1
+##  [10,] -2.0 -1 3.6     1
+##  [11,] -1.6 -1 0.0     1
+##  [12,] -1.6 -1 0.4     1
+##  [13,] -1.6 -1 0.8     1
+##  [14,] -1.6 -1 1.2     1
+##  [15,] -1.6 -1 1.6     1
+##  [16,] -1.6 -1 2.0     1
+##  [17,] -1.6 -1 2.4     1
+##  [18,] -1.6 -1 2.8     1
+##  [19,] -1.6 -1 3.2     1
+##  [20,] -1.6 -1 3.6     1
+##  [21,] -1.2 -1 0.0     1
+##  [22,] -1.2 -1 0.4     1
+##  [23,] -1.2 -1 0.8     1
+##  [24,] -1.2 -1 1.2     1
+##  [25,] -1.2 -1 1.6     1
+##  [26,] -1.2 -1 2.0     1
+##  [27,] -1.2 -1 2.4     1
+##  [28,] -1.2 -1 2.8     1
+##  [29,] -1.2 -1 3.2     1
+##  [30,] -1.2 -1 3.6     1
+##  [31,] -0.8 -1 0.0     1
+##  [32,] -0.8 -1 0.4     1
+##  [33,] -0.8 -1 0.8     1
+##  [34,] -0.8 -1 1.2     1
+##  [35,] -0.8 -1 1.6     1
+##  [36,] -0.8 -1 2.0     1
+##  [37,] -0.8 -1 2.4     1
+##  [38,] -0.8 -1 2.8     1
+##  [39,] -0.8 -1 3.2     1
+##  [40,] -0.8 -1 3.6     1
+##  [41,] -0.4 -1 0.0     1
+##  [42,] -0.4 -1 0.4     1
+##  [43,] -0.4 -1 0.8     1
+##  [44,] -0.4 -1 1.2     1
+##  [45,] -0.4 -1 1.6     1
+##  [46,] -0.4 -1 2.0     1
+##  [47,] -0.4 -1 2.4     1
+##  [48,] -0.4 -1 2.8     1
+##  [49,] -0.4 -1 3.2     1
+##  [50,] -0.4 -1 3.6     1
+##  [51,]  0.0 -1 0.0     1
+##  [52,]  0.0 -1 0.4     1
+##  [53,]  0.0 -1 0.8     1
+##  [54,]  0.0 -1 1.2     1
+##  [55,]  0.0 -1 1.6     1
+##  [56,]  0.0 -1 2.0     1
+##  [57,]  0.0 -1 2.4     1
+##  [58,]  0.0 -1 2.8     1
+##  [59,]  0.0 -1 3.2     1
+##  [60,]  0.0 -1 3.6     1
+##  [61,]  0.4 -1 0.0     1
+##  [62,]  0.4 -1 0.4     1
+##  [63,]  0.4 -1 0.8     1
+##  [64,]  0.4 -1 1.2     1
+##  [65,]  0.4 -1 1.6     1
+##  [66,]  0.4 -1 2.0     1
+##  [67,]  0.4 -1 2.4     1
+##  [68,]  0.4 -1 2.8     1
+##  [69,]  0.4 -1 3.2     1
+##  [70,]  0.4 -1 3.6     1
+##  [71,]  0.8 -1 0.0     1
+##  [72,]  0.8 -1 0.4     1
+##  [73,]  0.8 -1 0.8     1
+##  [74,]  0.8 -1 1.2     1
+##  [75,]  0.8 -1 1.6     1
+##  [76,]  0.8 -1 2.0     1
+##  [77,]  0.8 -1 2.4     1
+##  [78,]  0.8 -1 2.8     1
+##  [79,]  0.8 -1 3.2     1
+##  [80,]  0.8 -1 3.6     1
+##  [81,]  1.2 -1 0.0     1
+##  [82,]  1.2 -1 0.4     1
+##  [83,]  1.2 -1 0.8     1
+##  [84,]  1.2 -1 1.2     1
+##  [85,]  1.2 -1 1.6     1
+##  [86,]  1.2 -1 2.0     1
+##  [87,]  1.2 -1 2.4     1
+##  [88,]  1.2 -1 2.8     1
+##  [89,]  1.2 -1 3.2     1
+##  [90,]  1.2 -1 3.6     1
+##  [91,]  1.6 -1 0.0     1
+##  [92,]  1.6 -1 0.4     1
+##  [93,]  1.6 -1 0.8     1
+##  [94,]  1.6 -1 1.2     1
+##  [95,]  1.6 -1 1.6     1
+##  [96,]  1.6 -1 2.0     1
+##  [97,]  1.6 -1 2.4     1
+##  [98,]  1.6 -1 2.8     1
+##  [99,]  1.6 -1 3.2     1
+## [100,]  1.6 -1 3.6     1</code></pre>
+<p>Bila ty = 0:</p>
+<pre class="r"><code>t &lt;- c(0, 0, 0)
+names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
+t</code></pre>
+<pre><code>## x y z 
+## 0 0 0</code></pre>
+<pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
+               sin(theta),  cos(theta), 0, t[&#39;y&#39;],
+               0,           0,          1, t[&#39;z&#39;]),
+             ncol=4, byrow=TRUE)
+Rt</code></pre>
+<pre><code>##      [,1] [,2] [,3] [,4]
+## [1,]    1    0    0    0
+## [2,]    0    1    0    0
+## [3,]    0    0    1    0</code></pre>
+<pre class="r"><code># ramean
+sUV &lt;- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
+#sUV
+UV &lt;- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) &lt;- c(&#39;u&#39;, &#39;v&#39;, &#39;s&#39;)
+UV[,&#39;u&#39;] &lt;- sUV[,&#39;su&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;v&#39;] &lt;- sUV[,&#39;sv&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;s&#39;] &lt;- sUV[,&#39;s&#39;]
+#UV
+
+# plot
+library(ggplot2)
+df &lt;- data.frame(UV)
+#df
+ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_point(aes(color=s)) +
+  scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
+  scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
+  ggtitle(&#39;2Dimage range is (0,0)..(320,240)&#39;)</code></pre>
+<pre><code>## Warning: Removed 18 rows containing missing values (geom_point).</code></pre>
+<p><img src="3dreconstruction_files/figure-html/unnamed-chunk-10-1.png" title="" alt="" width="672" /></p>
+<p>Bila ty = -1: (kamera agak ke atas)</p>
+<pre class="r"><code>t &lt;- c(0, -1, 0)
+names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
+t</code></pre>
+<pre><code>##  x  y  z 
+##  0 -1  0</code></pre>
+<pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
+               sin(theta),  cos(theta), 0, t[&#39;y&#39;],
+               0,           0,          1, t[&#39;z&#39;]),
+             ncol=4, byrow=TRUE)
+Rt</code></pre>
+<pre><code>##      [,1] [,2] [,3] [,4]
+## [1,]    1    0    0    0
+## [2,]    0    1    0   -1
+## [3,]    0    0    1    0</code></pre>
+<pre class="r"><code># ramean
+sUV &lt;- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
+#sUV
+UV &lt;- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) &lt;- c(&#39;u&#39;, &#39;v&#39;, &#39;s&#39;)
+UV[,&#39;u&#39;] &lt;- sUV[,&#39;su&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;v&#39;] &lt;- sUV[,&#39;sv&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;s&#39;] &lt;- sUV[,&#39;s&#39;]
+#UV
+
+# plot
+library(ggplot2)
+df &lt;- data.frame(UV)
+#df
+ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_point(aes(color=s)) +
+  scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
+  scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
+  ggtitle(&#39;2Dimage range is (0,0)..(320,240)&#39;)</code></pre>
+<pre><code>## Warning: Removed 23 rows containing missing values (geom_point).</code></pre>
+<p><img src="3dreconstruction_files/figure-html/unnamed-chunk-11-1.png" title="" alt="" width="672" /></p>
+<p>Bila ty = +2: (kamera di bawah lantai)</p>
+<pre class="r"><code>t &lt;- c(0, +2, 0)
+names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
+t</code></pre>
+<pre><code>## x y z 
+## 0 2 0</code></pre>
+<pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
+               sin(theta),  cos(theta), 0, t[&#39;y&#39;],
+               0,           0,          1, t[&#39;z&#39;]),
+             ncol=4, byrow=TRUE)
+Rt</code></pre>
+<pre><code>##      [,1] [,2] [,3] [,4]
+## [1,]    1    0    0    0
+## [2,]    0    1    0    2
+## [3,]    0    0    1    0</code></pre>
+<pre class="r"><code># ramean
+sUV &lt;- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
+#sUV
+UV &lt;- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) &lt;- c(&#39;u&#39;, &#39;v&#39;, &#39;s&#39;)
+UV[,&#39;u&#39;] &lt;- sUV[,&#39;su&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;v&#39;] &lt;- sUV[,&#39;sv&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;s&#39;] &lt;- sUV[,&#39;s&#39;]
+#UV
+
+# plot
+library(ggplot2)
+df &lt;- data.frame(UV)
+#df
+ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_point(aes(color=s)) +
+  scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
+  scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
+  ggtitle(&#39;2Dimage range is (0,0)..(320,240)&#39;)</code></pre>
+<pre><code>## Warning: Removed 44 rows containing missing values (geom_point).</code></pre>
+<p><img src="3dreconstruction_files/figure-html/unnamed-chunk-12-1.png" title="" alt="" width="672" /></p>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,343 @@
+---
+title: "2D to 3D Reconstruction for Virtual Perception"
+author: "Sigit Ari Wijanarko, Hendy Irawan"
+date: "Saturday, April 04, 2015"
+output:
+  html_document:
+    self_contained: no
+---
+
+Formula: http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html
+
+```
+s * UV = CM * Rt * XYZ
+```
+
+s adalah pembagi dari UV, bila UV = (20, 10, 2) maka u = 20/2 = 10, v = 10/2 = 5.
+
+```
+CM = [ fx 0   cx ;
+       0  -fy cy ;
+       0  0   1  ]
+```
+
+-fy diminuskan karena di gambar 2D, pojok atas adalah v=0 dan bawah adalah misalnya v=240 (untuk dimensi 320x240); padahal di 3D bawah adalah y<0 dan atas adalah y>0.
+
+Untuk mendapatkan fx dan fy, kita menentukan dulu focal length dan ukuran "sensor".
+Anggap focal length (F) 35mm. Dan sensor 36mm x 24mm (Full-frame). Trus resolusi gambar 320x240.
+
+* sx = image width(px) / sensor width(mm) = 320px / 36mm = 8.9px/mm
+* sy = image height(px) / sensor height(mm) = 240px / 24mm = 10px/mm
+* kalo square pixel, harusnya sx == sy
+
+Maka
+
+* fx = F * sx = 35mm * 8.9 = 311.1 px
+* fy = F * sy = 35mm * 10 = 350 px
+* cx (image horizontal center) = imageWidth / 2
+* cy (image vertical center) = imageHeight / 2
+
+Maka
+
+```{r}
+# 35mm lens on Sony Alpha 7r
+focalLength <- 35 #mm
+imageWidth <- 320 #px
+imageHeight <- 240 #Px
+sensorWidth <- 36 #mm
+sensorHeight <- 24 #mm
+centerX <- imageWidth / 2 #px
+centerY <- imageHeight / 2 #px
+CM <- matrix(c(focalLength * imageWidth / sensorWidth, 0, centerX,
+               0, -focalLength * imageHeight / sensorHeight, centerY,
+               0, 0, 1), ncol=3, byrow=TRUE)
+CM
+```
+
+Contoh: Samsung Galaxy S4:
+
+* Aperture size F2.2
+* Focal length (35mm equivalent): 31 mm --> harus dikonversi ke focal length fisik = 4.3mm (http://www.digified.net/focallength/)
+* Camera sensor size: 1/3.06" (diagonal: 0.3268" = 8.3mm, dimensi: 6.64mm x 4.98mm)
+* Pixel size: 1.14 μm
+
+```{r}
+# Samsung Galaxy S4
+focalLength <- 4.3 #mm
+imageWidth <- 320 #px
+imageHeight <- 240 #px
+sensorWidth <- 6.64 #mm
+sensorHeight <- 4.98 #mm
+centerX <- imageWidth / 2 #px
+centerY <- imageHeight / 2 #px
+CM <- matrix(c(focalLength * imageWidth / sensorWidth, 0, centerX,
+               0, -focalLength * imageHeight / sensorHeight, centerY,
+               0, 0, 1), ncol=3, byrow=TRUE)
+CM
+```
+
+Kalau udah punya CM maka perlu bikin joint rotation-translation matrix. Ini Hendy agak bingung jadi biarin Sigit aja yang pusing :p
+
+```{r}
+theta <- 0*pi
+t <- c(0, 0, 0)
+names(t) <- c('x', 'y', 'z')
+t
+Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
+               sin(theta),  cos(theta), 0, t['y'],
+               0,           0,          1, t['z']),
+             ncol=4, byrow=TRUE)
+Rt
+```
+
+Dari sini kita bisa memproyeksikan sebuah titik 3D ke 2D.
+Kalau benar, maka untuk dari 2D ke 3D ya tinggal dibalik.
+
+```{r}
+                # x    y    z   1
+XYZ <- matrix(c(  0,   0,0.01,  1, # persis di tengah
+                  0,   0,   1,  1, # persis di tengah, agak ke depan
+                 -1,   0,   1,  1, # depan, agak ke kiri
+                  3,   0,   1,  1, # depan, lebih ke kanan
+                  0,   1,   1,  1, # depan, atas
+                  0,  -3,   1,  1, # depan, lebih ke bawah
+                 -1,  -3,   1,  1, # depan, kiri atas
+                  2,   4,   1,  1, # depan, kanan atas
+                  0,   0,   5,  1, # persis di tengah, depan banget
+                 -1,   0,   5,  1, # depan banget, agak ke kiri
+                  3,   0,   5,  1, # depan banget, lebih ke kanan
+                  0,   1,   5,  1, # depan banget, atas
+                  0,  -3,   5,  1, # depan banget, lebih ke bawah
+                 -1,  -3,   5,  1, # depan banget, kiri atas
+                  2,   4,   5,  1),# depan banget, kanan atas
+              ncol=4, byrow=TRUE)
+colnames(XYZ) <- c('x', 'y', 'z', '1')
+XYZ
+```
+
+Tinggal dikalikan dech:
+
+```{r}
+sUV <- t(CM %*% Rt %*% XYZ[4,]) # point ke-4
+names(sUV) <- c('u', 'v', 's')
+sUV
+if (sUV['s'] != 0) UV <- sUV / sUV['s'] else UV <- sUV
+UV
+```
+
+Atau ramean:
+
+```{r}
+sUV <- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) <- c('su', 'sv', 's')
+sUV
+UV <- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) <- c('u', 'v', 's')
+UV[,'u'] <- sUV[,'su'] / sUV[,'s']
+UV[,'v'] <- sUV[,'sv'] / sUV[,'s']
+UV[,'s'] <- sUV[,'s']
+UV
+```
+
+Yuk coba kita plot.
+
+```{r}
+library(ggplot2)
+df <- data.frame(UV)
+df$id <- rownames(df)
+df$salpha <- min(max(df$s/5, 0), 1)
+df$dsize <- pmin(10/df$s, 20)
+df
+ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_text(aes(label=id, color=id)) + #,size=dsize
+  scale_y_reverse() +
+  ggtitle('Note that image range is (0,0)..(320,240), and point ke(n) = ke(n+7) cuma beda z')
+```
+
+Experimen apabila Rt diganti sedikit:
+
+```{r}
+t <- c(1, 0, 0)
+names(t) <- c('x', 'y', 'z')
+t
+Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
+               sin(theta),  cos(theta), 0, t['y'],
+               0,           0,          1, t['z']),
+             ncol=4, byrow=TRUE)
+Rt
+
+# ramean
+sUV <- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) <- c('su', 'sv', 's')
+#sUV
+UV <- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) <- c('u', 'v', 's')
+UV[,'u'] <- sUV[,'su'] / sUV[,'s']
+UV[,'v'] <- sUV[,'sv'] / sUV[,'s']
+UV[,'s'] <- sUV[,'s']
+#UV
+
+# plot
+library(ggplot2)
+df <- data.frame(UV)
+df
+ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_text(label=rownames(df), color=rownames(df)) +
+  scale_y_reverse() +
+  ggtitle('Note that image range is (0,0)..(320,240), and point ke(n) = ke(n+7) cuma beda z')
+```
+
+## Memplot 'lantai'
+
+
+```{r}
+# create 100 lattice points (10x10) spanning from X=-2..+2 and Z =0..10, Y constant = -1
+XYZ <- matrix(nrow = 100, ncol=4)
+colnames(XYZ) <- c('x', 'y', 'z', 'dummy')
+for (i in 0:9) {
+  for (j in 0:9) {
+    x <- -2 + i*0.4
+    y <- -1
+    z <- 0 + j*1
+    XYZ[i * 10 + j + 1,] <- c(x, y, z, 1)
+  }
+}
+XYZ
+```
+
+Bila ty = 0:
+
+```{r}
+t <- c(0, 0, 0)
+names(t) <- c('x', 'y', 'z')
+t
+Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
+               sin(theta),  cos(theta), 0, t['y'],
+               0,           0,          1, t['z']),
+             ncol=4, byrow=TRUE)
+Rt
+
+# ramean
+sUV <- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) <- c('su', 'sv', 's')
+#sUV
+UV <- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) <- c('u', 'v', 's')
+UV[,'u'] <- sUV[,'su'] / sUV[,'s']
+UV[,'v'] <- sUV[,'sv'] / sUV[,'s']
+UV[,'s'] <- sUV[,'s']
+#UV
+
+# plot
+library(ggplot2)
+df <- data.frame(UV)
+#df
+ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_point(aes(color=s)) +
+  scale_y_reverse(limits=c(360, 0), breaks=c(0, 120, 240)) + 
+  scale_x_continuous(limits=c(0, 480), breaks=c(0, 160, 320)) +
+  ggtitle('2Dimage range is (0,0)..(320,240)')
+```
+
+Bila theta = pi/8: (terhadap sumbu z[depan-belakang])
+
+```{r}
+theta <- pi/8
+t <- c(0, 0, 0)
+names(t) <- c('x', 'y', 'z')
+t
+Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
+               sin(theta),  cos(theta), 0, t['y'],
+               0,           0,          1, t['z']),
+             ncol=4, byrow=TRUE)
+Rt
+
+# ramean
+sUV <- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) <- c('su', 'sv', 's')
+#sUV
+UV <- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) <- c('u', 'v', 's')
+UV[,'u'] <- sUV[,'su'] / sUV[,'s']
+UV[,'v'] <- sUV[,'sv'] / sUV[,'s']
+UV[,'s'] <- sUV[,'s']
+#UV
+
+# plot
+library(ggplot2)
+df <- data.frame(UV)
+#df
+ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_point(aes(color=s)) +
+  scale_y_reverse(limits=c(360, 0), breaks=c(0, 120, 240)) + 
+  scale_x_continuous(limits=c(0, 480), breaks=c(0, 160, 320)) +
+  ggtitle('2Dimage range is (0,0)..(320,240)')
+```
+
+Bila ty = -1: (kamera agak ke atas)
+
+```{r}
+t <- c(0, -1, 0)
+names(t) <- c('x', 'y', 'z')
+t
+Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
+               sin(theta),  cos(theta), 0, t['y'],
+               0,           0,          1, t['z']),
+             ncol=4, byrow=TRUE)
+Rt
+
+# ramean
+sUV <- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) <- c('su', 'sv', 's')
+#sUV
+UV <- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) <- c('u', 'v', 's')
+UV[,'u'] <- sUV[,'su'] / sUV[,'s']
+UV[,'v'] <- sUV[,'sv'] / sUV[,'s']
+UV[,'s'] <- sUV[,'s']
+#UV
+
+# plot
+library(ggplot2)
+df <- data.frame(UV)
+#df
+ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_point(aes(color=s)) +
+  scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
+  scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
+  ggtitle('2Dimage range is (0,0)..(320,240)')
+```
+
+Bila ty = +2: (kamera di bawah lantai)
+
+```{r}
+t <- c(0, +2, 0)
+names(t) <- c('x', 'y', 'z')
+t
+Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
+               sin(theta),  cos(theta), 0, t['y'],
+               0,           0,          1, t['z']),
+             ncol=4, byrow=TRUE)
+Rt
+
+# ramean
+sUV <- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) <- c('su', 'sv', 's')
+#sUV
+UV <- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) <- c('u', 'v', 's')
+UV[,'u'] <- sUV[,'su'] / sUV[,'s']
+UV[,'v'] <- sUV[,'sv'] / sUV[,'s']
+UV[,'s'] <- sUV[,'s']
+#UV
+
+# plot
+library(ggplot2)
+df <- data.frame(UV)
+#df
+ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_point(aes(color=s)) +
+  scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
+  scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
+  ggtitle('2Dimage range is (0,0)..(320,240)')
+```
