@@ -47,27 +47,29 @@ s * UV = CM * Rt * XYZ
 
 s adalah pembagi dari UV, bila UV = (20, 10, 2) maka u = 20/2 = 10, v = 10/2 = 5.
 
-```
-CM = [ fx 0   cx ;
-       0  -fy cy ;
-       0  0   1  ]
-```
+$$\mathbf{CM} = \left[\begin{array}
+{rrr}
+f_x &    0 & c_x \\
+  0 & -f_y & c_y \\
+  0 &    0 &   1
+\end{array}\right]
+$$
 
--fy diminuskan karena di gambar 2D, pojok atas adalah v=0 dan bawah adalah misalnya v=240 (untuk dimensi 320x240); padahal di 3D bawah adalah y<0 dan atas adalah y>0.
+$-f_y$ diminuskan karena di gambar 2D, pojok atas adalah $v=0$ dan bawah adalah misalnya $v=240$ (untuk dimensi 320×240); padahal di 3D bawah adalah $y<0$ dan atas adalah $y>0$.
 
-Untuk mendapatkan fx dan fy, kita menentukan dulu focal length dan ukuran "sensor".
-Anggap focal length (F) 35mm. Dan sensor 36mm x 24mm (Full-frame). Trus resolusi gambar 320x240.
+Untuk mendapatkan $f_x$ dan $f_y$, kita menentukan dulu focal length dan ukuran "sensor".
+Anggap focal length ($F$) 35mm. Dan sensor 36mm x 24mm (Full-frame). Trus resolusi gambar 320×240.
 
-* sx = image width(px) / sensor width(mm) = 320px / 36mm = 8.9px/mm
-* sy = image height(px) / sensor height(mm) = 240px / 24mm = 10px/mm
-* kalo square pixel, harusnya sx == sy
+* $s_x$ = image width(px) / sensor width(mm) = 320px / 36mm = 8.9px/mm
+* $s_y$ = image height(px) / sensor height(mm) = 240px / 24mm = 10px/mm
+* kalo square pixel, harusnya $s_x = s_y$
 
 Maka
 
-* fx = F * sx = 35mm * 8.9 = 311.1 px
-* fy = F * sy = 35mm * 10 = 350 px
-* cx (image horizontal center) = imageWidth / 2
-* cy (image vertical center) = imageHeight / 2
+* $f_x$ = F * sx = 35mm * 8.9 = 311.1 px
+* $f_y$ = F * sy = 35mm * 10 = 350 px
+* $c_x$ (image horizontal center) = imageWidth / 2
+* $c_y$ (image vertical center) = imageHeight / 2
 
 Maka
 

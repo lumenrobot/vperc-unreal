@@ -97,22 +97,26 @@ img {
 <p>Formula: <a href="http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html" class="uri">http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html</a></p>
 <pre><code>s * UV = CM * Rt * XYZ</code></pre>
 <p>s adalah pembagi dari UV, bila UV = (20, 10, 2) maka u = 20/2 = 10, v = 10/2 = 5.</p>
-<pre><code>CM = [ fx 0   cx ;
-       0  -fy cy ;
-       0  0   1  ]</code></pre>
-<p>-fy diminuskan karena di gambar 2D, pojok atas adalah v=0 dan bawah adalah misalnya v=240 (untuk dimensi 320x240); padahal di 3D bawah adalah y&lt;0 dan atas adalah y&gt;0.</p>
-<p>Untuk mendapatkan fx dan fy, kita menentukan dulu focal length dan ukuran “sensor”. Anggap focal length (F) 35mm. Dan sensor 36mm x 24mm (Full-frame). Trus resolusi gambar 320x240.</p>
+<p><span class="math">\[\mathbf{CM} = \left[\begin{array}
+{rrr}
+f_x &amp;    0 &amp; c_x \\
+  0 &amp; -f_y &amp; c_y \\
+  0 &amp;    0 &amp;   1
+\end{array}\right]
+\]</span></p>
+<p><span class="math">\(-f_y\)</span> diminuskan karena di gambar 2D, pojok atas adalah <span class="math">\(v=0\)</span> dan bawah adalah misalnya <span class="math">\(v=240\)</span> (untuk dimensi 320×240); padahal di 3D bawah adalah <span class="math">\(y&lt;0\)</span> dan atas adalah <span class="math">\(y&gt;0\)</span>.</p>
+<p>Untuk mendapatkan <span class="math">\(f_x\)</span> dan <span class="math">\(f_y\)</span>, kita menentukan dulu focal length dan ukuran “sensor”. Anggap focal length (<span class="math">\(F\)</span>) 35mm. Dan sensor 36mm x 24mm (Full-frame). Trus resolusi gambar 320×240.</p>
 <ul>
-<li>sx = image width(px) / sensor width(mm) = 320px / 36mm = 8.9px/mm</li>
-<li>sy = image height(px) / sensor height(mm) = 240px / 24mm = 10px/mm</li>
-<li>kalo square pixel, harusnya sx == sy</li>
+<li><span class="math">\(s_x\)</span> = image width(px) / sensor width(mm) = 320px / 36mm = 8.9px/mm</li>
+<li><span class="math">\(s_y\)</span> = image height(px) / sensor height(mm) = 240px / 24mm = 10px/mm</li>
+<li>kalo square pixel, harusnya <span class="math">\(s_x = s_y\)</span></li>
 </ul>
 <p>Maka</p>
 <ul>
-<li>fx = F * sx = 35mm * 8.9 = 311.1 px</li>
-<li>fy = F * sy = 35mm * 10 = 350 px</li>
-<li>cx (image horizontal center) = imageWidth / 2</li>
-<li>cy (image vertical center) = imageHeight / 2</li>
+<li><span class="math">\(f_x\)</span> = F * sx = 35mm * 8.9 = 311.1 px</li>
+<li><span class="math">\(f_y\)</span> = F * sy = 35mm * 10 = 350 px</li>
+<li><span class="math">\(c_x\)</span> (image horizontal center) = imageWidth / 2</li>
+<li><span class="math">\(c_y\)</span> (image vertical center) = imageHeight / 2</li>
 </ul>
 <p>Maka</p>
 <pre class="r"><code>library(pander)
