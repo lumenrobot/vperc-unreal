@@ -69,6 +69,31 @@ img {
 </div>
 
 
+<div id="metrics-unitsscale-and-3d-coordinate-systems" class="section level2">
+<h2>Metrics Units/Scale and 3D Coordinate Systems</h2>
+<p>Unreal Units (UU) are 1 cm, 0.01 of Blender/SecondLife. +x forward, +y right, +z up.</p>
+<p>Unity Units are by default 1 m, terbukti dari setting gravity default 9.81 (m/s) yang sesuai reality, tapi memang Unity lebih lax dalam urusan unit. x+ right, y+ up, z+ away.</p>
+<p>Blender Units (BU) are usually 1 m. See <a href="https://wiki.unrealengine.com/Static_Mesh_from_Blender">Static Mesh from Blender</a>. Left handed: +x is to right, +y away, +z up.</p>
+<ul>
+<li>Dari Blender, pas export FBX, gunakan export scale 1 aja, jadi unit si model tetap meter.</li>
+<li>Di Unreal, pas import FBX, gunakan import scale 0.01. Dari meter menjadi cm.</li>
+<li>Di Unity, pas import FBX, gunakan import scale 1. Dari meter tetap meter.</li>
+</ul>
+<p><a href="http://wiki.secondlife.com/wiki/Coordinate">Second Life / OpenSimulator</a> uses meters. A sim is 256×256 (x×y) meters. x is longitude (from west to east, the wiki is partially incorrect, but the examples are good and are <a href="http://xahsl.org/sl/build_pos.html">verified here</a>), y is latitude (from south to north). z is altitude where 0 is lowest possible point. When someone is facing north, this is exactly same as Blender.</p>
+<p>Dalam sistem Lumen yang dipakai sebagai standar adalah sistem Second Life. Jadi pada saat image recognition/tracking, semua koordinatnya menggunakan aturan Second Life.</p>
+<ul>
+<li>Dari koordinat Lumen ke Unreal, pada saat visualisasi Unreal, maka swap x dan y lalu koordinatnya akan discale menjadi Unreal Units (×0.01). Sebaliknya dari Unreal ke Lumen, koordinatenya discale menjadi SecondLife/Blender units (×100) lalu swap x dan y.</li>
+<li>Dari koordinat Lumen ke Unity, pada saat visualisasi Unity, maka koordinatnya akan di-rotate 90degrees for X (pitch) sehingga y+ up dan z+ away. Sebaliknya dari Unity ke Lumen, koordinatenya dirotate -90degrees for X (pitch) menjadi SecondLife/Blender coordinates (y+ away, +z up).</li>
+</ul>
+<p>Untuk rotasi 3D, menggunakan style Blender/SecondLife. See also: <a href="https://docs.unrealengine.com/latest/INT/API/Runtime/Core/Math/FRotator/index.html">rotation Unreal</a>. Unit sudut adalah degrees, karena sudut degrees juga dipakai oleh Unreal/Unity/Blender. Pas kalkulasi internal baru diubah ke radian. Nama sudutnya buka alpha, beta, gamma tapi yang lebih deskriptif yaitu pitch (tengadah), roll (geleng clockwise), yaw (menoleh ke kiri):</p>
+<ul>
+<li>Pitch (RX): Looking up and down (0=Straight Ahead, +Up, -Down).</li>
+<li>Roll (RY): Rotation about axis of screen, 0=Straight, +Clockwise, -CCW.</li>
+<li>Yaw (RZ): Rotating around (running in circles), 0=North, +West, -East. Kalo di Unreal: 0=East, +North, -South.</li>
+</ul>
+</div>
+<div id="d-reconstruction" class="section level2">
+<h2>3D Reconstruction</h2>
 <p>Formula: <a href="http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html" class="uri">http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html</a></p>
 <pre><code>s * UV = CM * Rt * XYZ</code></pre>
 <p>s adalah pembagi dari UV, bila UV = (20, 10, 2) maka u = 20/2 = 10, v = 10/2 = 5.</p>
@@ -90,7 +115,8 @@ img {
 <li>cy (image vertical center) = imageHeight / 2</li>
 </ul>
 <p>Maka</p>
-<pre class="r"><code># 35mm lens on Sony Alpha 7r
+<pre class="r"><code>library(pander)
+# 35mm lens on Sony Alpha 7r
 focalLength &lt;- 35 #mm
 imageWidth &lt;- 320 #px
 imageHeight &lt;- 240 #Px
@@ -101,17 +127,38 @@ centerY &lt;- imageHeight / 2 #px
 CM &lt;- matrix(c(focalLength * imageWidth / sensorWidth, 0, centerX,
                0, -focalLength * imageHeight / sensorHeight, centerY,
                0, 0, 1), ncol=3, byrow=TRUE)
-CM</code></pre>
-<pre><code>##          [,1] [,2] [,3]
-## [1,] 311.1111    0  160
-## [2,]   0.0000 -350  120
-## [3,]   0.0000    0    1</code></pre>
+pander(CM, caption=&#39;camera matrix&#39;)</code></pre>
+<table>
+<caption>camera matrix</caption>
+<colgroup>
+<col width="8%" />
+<col width="6%" />
+<col width="6%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="left">311.1</td>
+<td align="center">0</td>
+<td align="left">160</td>
+</tr>
+<tr class="even">
+<td align="left">0</td>
+<td align="center">-350</td>
+<td align="left">120</td>
+</tr>
+<tr class="odd">
+<td align="left">0</td>
+<td align="center">0</td>
+<td align="left">1</td>
+</tr>
+</tbody>
+</table>
 <p>Contoh: Samsung Galaxy S4:</p>
 <ul>
 <li>Aperture size F2.2</li>
 <li>Focal length (35mm equivalent): 31 mm –&gt; harus dikonversi ke focal length fisik = 4.3mm (<a href="http://www.digified.net/focallength/" class="uri">http://www.digified.net/focallength/</a>)</li>
 <li>Camera sensor size: 1/3.06&quot; (diagonal: 0.3268&quot; = 8.3mm, dimensi: 6.64mm x 4.98mm)</li>
-<li>Pixel size: 1.14 µm</li>
+<li>Pixel size: 1.14 μm</li>
 </ul>
 <pre class="r"><code># Samsung Galaxy S4
 focalLength &lt;- 4.3 #mm
@@ -119,33 +166,84 @@ imageWidth &lt;- 320 #px
 imageHeight &lt;- 240 #px
 sensorWidth &lt;- 6.64 #mm
 sensorHeight &lt;- 4.98 #mm
-centerX &lt;- imageWidth / 2 #px
-centerY &lt;- imageHeight / 2 #px
-CM &lt;- matrix(c(focalLength * imageWidth / sensorWidth, 0, centerX,
-               0, -focalLength * imageHeight / sensorHeight, centerY,
-               0, 0, 1), ncol=3, byrow=TRUE)
-CM</code></pre>
-<pre><code>##          [,1]      [,2] [,3]
-## [1,] 207.2289    0.0000  160
-## [2,]   0.0000 -207.2289  120
-## [3,]   0.0000    0.0000    1</code></pre>
+center &lt;- c(imageWidth / 2, imageHeight / 2) #px
+names(center) &lt;- c(&#39;u&#39;, &#39;v&#39;)
+f &lt;- c(focalLength * imageWidth / sensorWidth, focalLength * imageHeight / sensorHeight)
+names(f) &lt;- c(&#39;x&#39;, &#39;y&#39;)
+pander(f)</code></pre>
+<p><em>207.2</em> and <em>207.2</em></p>
+<pre class="r"><code>all.equal(f[&#39;x&#39;], f[&#39;y&#39;], check.names=FALSE) # harusnya f[&#39;x&#39;] ~ f[&#39;y&#39;] yaaa!!</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code>CM &lt;- matrix(c(f[&#39;x&#39;],       0, center[&#39;u&#39;],
+                    0, -f[&#39;y&#39;], center[&#39;v&#39;],
+                    0,       0,           1),
+             ncol=3, byrow=TRUE)
+pander(CM, caption=&#39;camera matrix&#39;)</code></pre>
+<table>
+<caption>camera matrix</caption>
+<colgroup>
+<col width="8%" />
+<col width="9%" />
+<col width="4%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="left">207.2</td>
+<td align="center">0</td>
+<td align="left">160</td>
+</tr>
+<tr class="even">
+<td align="left">0</td>
+<td align="center">-207.2</td>
+<td align="left">120</td>
+</tr>
+<tr class="odd">
+<td align="left">0</td>
+<td align="center">0</td>
+<td align="left">1</td>
+</tr>
+</tbody>
+</table>
 <p>Kalau udah punya CM maka perlu bikin joint rotation-translation matrix. Ini Hendy agak bingung jadi biarin Sigit aja yang pusing :p</p>
 <pre class="r"><code>theta &lt;- 0*pi # harusnya ini gamma, lihat penjelasan di bawah tentang rotasi 3D
 t &lt;- c(0, 0, 0)
 names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
-t</code></pre>
-<pre><code>## x y z 
-## 0 0 0</code></pre>
+pander(t)</code></pre>
+<p><em>0</em>, <em>0</em> and <em>0</em></p>
 <pre class="r"><code># rotasi ini sebenarnya masih RZ, belum R
 Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
                sin(theta),  cos(theta), 0, t[&#39;y&#39;],
                0,           0,          1, t[&#39;z&#39;]),
              ncol=4, byrow=TRUE)
-Rt</code></pre>
-<pre><code>##      [,1] [,2] [,3] [,4]
-## [1,]    1    0    0    0
-## [2,]    0    1    0    0
-## [3,]    0    0    1    0</code></pre>
+pander(Rt)</code></pre>
+<table>
+<colgroup>
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr class="even">
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr class="odd">
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+</tr>
+</tbody>
+</table>
 <p>Dari sini kita bisa memproyeksikan sebuah titik 3D ke 2D. Kalau benar, maka untuk dari 2D ke 3D ya tinggal dibalik.</p>
 <pre class="r"><code>                # x    y    z   1
 XYZ &lt;- matrix(c(  0,   0,0.01,  1, # persis di tengah
@@ -165,100 +263,480 @@ XYZ &lt;- matrix(c(  0,   0,0.01,  1, # persis di tengah
                   2,   4,   5,  1),# depan banget, kanan atas
               ncol=4, byrow=TRUE)
 colnames(XYZ) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;, &#39;1&#39;)
-XYZ</code></pre>
-<pre><code>##        x  y    z 1
-##  [1,]  0  0 0.01 1
-##  [2,]  0  0 1.00 1
-##  [3,] -1  0 1.00 1
-##  [4,]  3  0 1.00 1
-##  [5,]  0  1 1.00 1
-##  [6,]  0 -3 1.00 1
-##  [7,] -1 -3 1.00 1
-##  [8,]  2  4 1.00 1
-##  [9,]  0  0 5.00 1
-## [10,] -1  0 5.00 1
-## [11,]  3  0 5.00 1
-## [12,]  0  1 5.00 1
-## [13,]  0 -3 5.00 1
-## [14,] -1 -3 5.00 1
-## [15,]  2  4 5.00 1</code></pre>
+pander(XYZ)</code></pre>
+<table>
+<colgroup>
+<col width="5%" />
+<col width="5%" />
+<col width="6%" />
+<col width="6%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">x</th>
+<th align="center">y</th>
+<th align="center">z</th>
+<th align="center">1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0.01</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">3</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0</td>
+<td align="center">-3</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1</td>
+<td align="center">-3</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">4</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">0</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0</td>
+<td align="center">-3</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1</td>
+<td align="center">-3</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">2</td>
+<td align="center">4</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+</tbody>
+</table>
 <p>Tinggal dikalikan dech:</p>
 <pre class="r"><code>sUV &lt;- t(CM %*% Rt %*% XYZ[4,]) # point ke-4
 names(sUV) &lt;- c(&#39;u&#39;, &#39;v&#39;, &#39;s&#39;)
-sUV</code></pre>
-<pre><code>##          [,1] [,2] [,3]
-## [1,] 781.6867  120    1
-## attr(,&quot;names&quot;)
-## [1] &quot;u&quot; &quot;v&quot; &quot;s&quot;</code></pre>
+pander(sUV)</code></pre>
+<table>
+<tbody>
+<tr class="odd">
+<td align="left">781.7</td>
+<td align="left">120</td>
+<td align="left">1</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code>if (sUV[&#39;s&#39;] != 0) UV &lt;- sUV / sUV[&#39;s&#39;] else UV &lt;- sUV
-UV</code></pre>
-<pre><code>##          [,1] [,2] [,3]
-## [1,] 781.6867  120    1</code></pre>
+pander(UV)</code></pre>
+<table>
+<tbody>
+<tr class="odd">
+<td align="left">781.7</td>
+<td align="left">120</td>
+<td align="left">1</td>
+</tr>
+</tbody>
+</table>
 <p>Atau ramean:</p>
 <pre class="r"><code>sUV &lt;- t(CM %*% Rt %*% t(XYZ))
 colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
-sUV</code></pre>
-<pre><code>##               su         sv    s
-##  [1,]    1.60000    1.20000 0.01
-##  [2,]  160.00000  120.00000 1.00
-##  [3,]  -47.22892  120.00000 1.00
-##  [4,]  781.68675  120.00000 1.00
-##  [5,]  160.00000  -87.22892 1.00
-##  [6,]  160.00000  741.68675 1.00
-##  [7,]  -47.22892  741.68675 1.00
-##  [8,]  574.45783 -708.91566 1.00
-##  [9,]  800.00000  600.00000 5.00
-## [10,]  592.77108  600.00000 5.00
-## [11,] 1421.68675  600.00000 5.00
-## [12,]  800.00000  392.77108 5.00
-## [13,]  800.00000 1221.68675 5.00
-## [14,]  592.77108 1221.68675 5.00
-## [15,] 1214.45783 -228.91566 5.00</code></pre>
+pander(sUV)</code></pre>
+<table>
+<colgroup>
+<col width="9%" />
+<col width="9%" />
+<col width="5%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">su</th>
+<th align="center">sv</th>
+<th align="center">s</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1.6</td>
+<td align="center">1.2</td>
+<td align="center">0.01</td>
+</tr>
+<tr class="even">
+<td align="center">160</td>
+<td align="center">120</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-47.23</td>
+<td align="center">120</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">781.7</td>
+<td align="center">120</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">160</td>
+<td align="center">-87.23</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">160</td>
+<td align="center">741.7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-47.23</td>
+<td align="center">741.7</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">574.5</td>
+<td align="center">-708.9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">800</td>
+<td align="center">600</td>
+<td align="center">5</td>
+</tr>
+<tr class="even">
+<td align="center">592.8</td>
+<td align="center">600</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">1422</td>
+<td align="center">600</td>
+<td align="center">5</td>
+</tr>
+<tr class="even">
+<td align="center">800</td>
+<td align="center">392.8</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">800</td>
+<td align="center">1222</td>
+<td align="center">5</td>
+</tr>
+<tr class="even">
+<td align="center">592.8</td>
+<td align="center">1222</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">1214</td>
+<td align="center">-228.9</td>
+<td align="center">5</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code>UV &lt;- matrix(ncol = 3, nrow = nrow(sUV))
 colnames(UV) &lt;- c(&#39;u&#39;, &#39;v&#39;, &#39;s&#39;)
 UV[,&#39;u&#39;] &lt;- sUV[,&#39;su&#39;] / sUV[,&#39;s&#39;]
 UV[,&#39;v&#39;] &lt;- sUV[,&#39;sv&#39;] / sUV[,&#39;s&#39;]
 UV[,&#39;s&#39;] &lt;- sUV[,&#39;s&#39;]
-UV</code></pre>
-<pre><code>##               u          v    s
-##  [1,] 160.00000  120.00000 0.01
-##  [2,] 160.00000  120.00000 1.00
-##  [3,] -47.22892  120.00000 1.00
-##  [4,] 781.68675  120.00000 1.00
-##  [5,] 160.00000  -87.22892 1.00
-##  [6,] 160.00000  741.68675 1.00
-##  [7,] -47.22892  741.68675 1.00
-##  [8,] 574.45783 -708.91566 1.00
-##  [9,] 160.00000  120.00000 5.00
-## [10,] 118.55422  120.00000 5.00
-## [11,] 284.33735  120.00000 5.00
-## [12,] 160.00000   78.55422 5.00
-## [13,] 160.00000  244.33735 5.00
-## [14,] 118.55422  244.33735 5.00
-## [15,] 242.89157  -45.78313 5.00</code></pre>
+pander(UV)</code></pre>
+<table>
+<colgroup>
+<col width="9%" />
+<col width="9%" />
+<col width="5%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">u</th>
+<th align="center">v</th>
+<th align="center">s</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">160</td>
+<td align="center">120</td>
+<td align="center">0.01</td>
+</tr>
+<tr class="even">
+<td align="center">160</td>
+<td align="center">120</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-47.23</td>
+<td align="center">120</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">781.7</td>
+<td align="center">120</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">160</td>
+<td align="center">-87.23</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">160</td>
+<td align="center">741.7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-47.23</td>
+<td align="center">741.7</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">574.5</td>
+<td align="center">-708.9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">160</td>
+<td align="center">120</td>
+<td align="center">5</td>
+</tr>
+<tr class="even">
+<td align="center">118.6</td>
+<td align="center">120</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">284.3</td>
+<td align="center">120</td>
+<td align="center">5</td>
+</tr>
+<tr class="even">
+<td align="center">160</td>
+<td align="center">78.55</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">160</td>
+<td align="center">244.3</td>
+<td align="center">5</td>
+</tr>
+<tr class="even">
+<td align="center">118.6</td>
+<td align="center">244.3</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">242.9</td>
+<td align="center">-45.78</td>
+<td align="center">5</td>
+</tr>
+</tbody>
+</table>
 <p>Yuk coba kita plot.</p>
 <pre class="r"><code>library(ggplot2)
 df &lt;- data.frame(UV)
 df$id &lt;- rownames(df)
 df$salpha &lt;- min(max(df$s/5, 0), 1)
 df$dsize &lt;- pmin(10/df$s, 20)
-df</code></pre>
-<pre><code>##            u          v    s id salpha dsize
-## 1  160.00000  120.00000 0.01  1      1    20
-## 2  160.00000  120.00000 1.00  2      1    10
-## 3  -47.22892  120.00000 1.00  3      1    10
-## 4  781.68675  120.00000 1.00  4      1    10
-## 5  160.00000  -87.22892 1.00  5      1    10
-## 6  160.00000  741.68675 1.00  6      1    10
-## 7  -47.22892  741.68675 1.00  7      1    10
-## 8  574.45783 -708.91566 1.00  8      1    10
-## 9  160.00000  120.00000 5.00  9      1     2
-## 10 118.55422  120.00000 5.00 10      1     2
-## 11 284.33735  120.00000 5.00 11      1     2
-## 12 160.00000   78.55422 5.00 12      1     2
-## 13 160.00000  244.33735 5.00 13      1     2
-## 14 118.55422  244.33735 5.00 14      1     2
-## 15 242.89157  -45.78313 5.00 15      1     2</code></pre>
+pander(df)</code></pre>
+<table>
+<colgroup>
+<col width="9%" />
+<col width="9%" />
+<col width="6%" />
+<col width="6%" />
+<col width="12%" />
+<col width="12%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">u</th>
+<th align="center">v</th>
+<th align="center">s</th>
+<th align="center">id</th>
+<th align="center">salpha</th>
+<th align="center">dsize</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">160</td>
+<td align="center">120</td>
+<td align="center">0.01</td>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">20</td>
+</tr>
+<tr class="even">
+<td align="center">160</td>
+<td align="center">120</td>
+<td align="center">1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+<td align="center">10</td>
+</tr>
+<tr class="odd">
+<td align="center">-47.23</td>
+<td align="center">120</td>
+<td align="center">1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+<td align="center">10</td>
+</tr>
+<tr class="even">
+<td align="center">781.7</td>
+<td align="center">120</td>
+<td align="center">1</td>
+<td align="center">4</td>
+<td align="center">1</td>
+<td align="center">10</td>
+</tr>
+<tr class="odd">
+<td align="center">160</td>
+<td align="center">-87.23</td>
+<td align="center">1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+<td align="center">10</td>
+</tr>
+<tr class="even">
+<td align="center">160</td>
+<td align="center">741.7</td>
+<td align="center">1</td>
+<td align="center">6</td>
+<td align="center">1</td>
+<td align="center">10</td>
+</tr>
+<tr class="odd">
+<td align="center">-47.23</td>
+<td align="center">741.7</td>
+<td align="center">1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+<td align="center">10</td>
+</tr>
+<tr class="even">
+<td align="center">574.5</td>
+<td align="center">-708.9</td>
+<td align="center">1</td>
+<td align="center">8</td>
+<td align="center">1</td>
+<td align="center">10</td>
+</tr>
+<tr class="odd">
+<td align="center">160</td>
+<td align="center">120</td>
+<td align="center">5</td>
+<td align="center">9</td>
+<td align="center">1</td>
+<td align="center">2</td>
+</tr>
+<tr class="even">
+<td align="center">118.6</td>
+<td align="center">120</td>
+<td align="center">5</td>
+<td align="center">10</td>
+<td align="center">1</td>
+<td align="center">2</td>
+</tr>
+<tr class="odd">
+<td align="center">284.3</td>
+<td align="center">120</td>
+<td align="center">5</td>
+<td align="center">11</td>
+<td align="center">1</td>
+<td align="center">2</td>
+</tr>
+<tr class="even">
+<td align="center">160</td>
+<td align="center">78.55</td>
+<td align="center">5</td>
+<td align="center">12</td>
+<td align="center">1</td>
+<td align="center">2</td>
+</tr>
+<tr class="odd">
+<td align="center">160</td>
+<td align="center">244.3</td>
+<td align="center">5</td>
+<td align="center">13</td>
+<td align="center">1</td>
+<td align="center">2</td>
+</tr>
+<tr class="even">
+<td align="center">118.6</td>
+<td align="center">244.3</td>
+<td align="center">5</td>
+<td align="center">14</td>
+<td align="center">1</td>
+<td align="center">2</td>
+</tr>
+<tr class="odd">
+<td align="center">242.9</td>
+<td align="center">-45.78</td>
+<td align="center">5</td>
+<td align="center">15</td>
+<td align="center">1</td>
+<td align="center">2</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code>ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
   geom_text(aes(label=id, color=id)) + #,size=dsize
   scale_y_reverse() +
@@ -267,18 +745,41 @@ df</code></pre>
 <p>Experimen apabila Rt diganti sedikit:</p>
 <pre class="r"><code>t &lt;- c(1, 0, 0)
 names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
-t</code></pre>
-<pre><code>## x y z 
-## 1 0 0</code></pre>
+pander(t)</code></pre>
+<p><em>1</em>, <em>0</em> and <em>0</em></p>
 <pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
                sin(theta),  cos(theta), 0, t[&#39;y&#39;],
                0,           0,          1, t[&#39;z&#39;]),
              ncol=4, byrow=TRUE)
-Rt</code></pre>
-<pre><code>##      [,1] [,2] [,3] [,4]
-## [1,]    1    0    0    1
-## [2,]    0    1    0    0
-## [3,]    0    0    1    0</code></pre>
+pander(Rt)</code></pre>
+<table>
+<colgroup>
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+</tr>
+<tr class="even">
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr class="odd">
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code># ramean
 sUV &lt;- t(CM %*% Rt %*% t(XYZ))
 colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
@@ -293,28 +794,104 @@ UV[,&#39;s&#39;] &lt;- sUV[,&#39;s&#39;]
 # plot
 library(ggplot2)
 df &lt;- data.frame(UV)
-df</code></pre>
-<pre><code>##             u          v    s
-## 1  20882.8916  120.00000 0.01
-## 2    367.2289  120.00000 1.00
-## 3    160.0000  120.00000 1.00
-## 4    988.9157  120.00000 1.00
-## 5    367.2289  -87.22892 1.00
-## 6    367.2289  741.68675 1.00
-## 7    160.0000  741.68675 1.00
-## 8    781.6867 -708.91566 1.00
-## 9    201.4458  120.00000 5.00
-## 10   160.0000  120.00000 5.00
-## 11   325.7831  120.00000 5.00
-## 12   201.4458   78.55422 5.00
-## 13   201.4458  244.33735 5.00
-## 14   160.0000  244.33735 5.00
-## 15   284.3373  -45.78313 5.00</code></pre>
+pander(df)</code></pre>
+<table>
+<colgroup>
+<col width="8%" />
+<col width="9%" />
+<col width="5%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">u</th>
+<th align="center">v</th>
+<th align="center">s</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">20883</td>
+<td align="center">120</td>
+<td align="center">0.01</td>
+</tr>
+<tr class="even">
+<td align="center">367.2</td>
+<td align="center">120</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">160</td>
+<td align="center">120</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">988.9</td>
+<td align="center">120</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">367.2</td>
+<td align="center">-87.23</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">367.2</td>
+<td align="center">741.7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">160</td>
+<td align="center">741.7</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">781.7</td>
+<td align="center">-708.9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">201.4</td>
+<td align="center">120</td>
+<td align="center">5</td>
+</tr>
+<tr class="even">
+<td align="center">160</td>
+<td align="center">120</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">325.8</td>
+<td align="center">120</td>
+<td align="center">5</td>
+</tr>
+<tr class="even">
+<td align="center">201.4</td>
+<td align="center">78.55</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">201.4</td>
+<td align="center">244.3</td>
+<td align="center">5</td>
+</tr>
+<tr class="even">
+<td align="center">160</td>
+<td align="center">244.3</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">284.3</td>
+<td align="center">-45.78</td>
+<td align="center">5</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code>ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
   geom_text(label=rownames(df), color=rownames(df)) +
   scale_y_reverse() +
   ggtitle(&#39;Note that image range is (0,0)..(320,240), and point ke(n) = ke(n+7) cuma beda z&#39;)</code></pre>
 <p><img src="3dreconstruction_files/figure-html/unnamed-chunk-8-1.png" title="" alt="" width="672" /></p>
+</div>
 <div id="memplot-lantai" class="section level2">
 <h2>Memplot ‘lantai’</h2>
 <pre class="r"><code># create 100 lattice points (10x10) spanning from X=-2..+2 and Z =0..10, Y constant = -1
@@ -328,124 +905,664 @@ for (i in 0:9) {
     XYZ[i * 10 + j + 1,] &lt;- c(x, y, z, 1)
   }
 }
-XYZ</code></pre>
-<pre><code>##           x  y z dummy
-##   [1,] -2.0 -1 0     1
-##   [2,] -2.0 -1 1     1
-##   [3,] -2.0 -1 2     1
-##   [4,] -2.0 -1 3     1
-##   [5,] -2.0 -1 4     1
-##   [6,] -2.0 -1 5     1
-##   [7,] -2.0 -1 6     1
-##   [8,] -2.0 -1 7     1
-##   [9,] -2.0 -1 8     1
-##  [10,] -2.0 -1 9     1
-##  [11,] -1.6 -1 0     1
-##  [12,] -1.6 -1 1     1
-##  [13,] -1.6 -1 2     1
-##  [14,] -1.6 -1 3     1
-##  [15,] -1.6 -1 4     1
-##  [16,] -1.6 -1 5     1
-##  [17,] -1.6 -1 6     1
-##  [18,] -1.6 -1 7     1
-##  [19,] -1.6 -1 8     1
-##  [20,] -1.6 -1 9     1
-##  [21,] -1.2 -1 0     1
-##  [22,] -1.2 -1 1     1
-##  [23,] -1.2 -1 2     1
-##  [24,] -1.2 -1 3     1
-##  [25,] -1.2 -1 4     1
-##  [26,] -1.2 -1 5     1
-##  [27,] -1.2 -1 6     1
-##  [28,] -1.2 -1 7     1
-##  [29,] -1.2 -1 8     1
-##  [30,] -1.2 -1 9     1
-##  [31,] -0.8 -1 0     1
-##  [32,] -0.8 -1 1     1
-##  [33,] -0.8 -1 2     1
-##  [34,] -0.8 -1 3     1
-##  [35,] -0.8 -1 4     1
-##  [36,] -0.8 -1 5     1
-##  [37,] -0.8 -1 6     1
-##  [38,] -0.8 -1 7     1
-##  [39,] -0.8 -1 8     1
-##  [40,] -0.8 -1 9     1
-##  [41,] -0.4 -1 0     1
-##  [42,] -0.4 -1 1     1
-##  [43,] -0.4 -1 2     1
-##  [44,] -0.4 -1 3     1
-##  [45,] -0.4 -1 4     1
-##  [46,] -0.4 -1 5     1
-##  [47,] -0.4 -1 6     1
-##  [48,] -0.4 -1 7     1
-##  [49,] -0.4 -1 8     1
-##  [50,] -0.4 -1 9     1
-##  [51,]  0.0 -1 0     1
-##  [52,]  0.0 -1 1     1
-##  [53,]  0.0 -1 2     1
-##  [54,]  0.0 -1 3     1
-##  [55,]  0.0 -1 4     1
-##  [56,]  0.0 -1 5     1
-##  [57,]  0.0 -1 6     1
-##  [58,]  0.0 -1 7     1
-##  [59,]  0.0 -1 8     1
-##  [60,]  0.0 -1 9     1
-##  [61,]  0.4 -1 0     1
-##  [62,]  0.4 -1 1     1
-##  [63,]  0.4 -1 2     1
-##  [64,]  0.4 -1 3     1
-##  [65,]  0.4 -1 4     1
-##  [66,]  0.4 -1 5     1
-##  [67,]  0.4 -1 6     1
-##  [68,]  0.4 -1 7     1
-##  [69,]  0.4 -1 8     1
-##  [70,]  0.4 -1 9     1
-##  [71,]  0.8 -1 0     1
-##  [72,]  0.8 -1 1     1
-##  [73,]  0.8 -1 2     1
-##  [74,]  0.8 -1 3     1
-##  [75,]  0.8 -1 4     1
-##  [76,]  0.8 -1 5     1
-##  [77,]  0.8 -1 6     1
-##  [78,]  0.8 -1 7     1
-##  [79,]  0.8 -1 8     1
-##  [80,]  0.8 -1 9     1
-##  [81,]  1.2 -1 0     1
-##  [82,]  1.2 -1 1     1
-##  [83,]  1.2 -1 2     1
-##  [84,]  1.2 -1 3     1
-##  [85,]  1.2 -1 4     1
-##  [86,]  1.2 -1 5     1
-##  [87,]  1.2 -1 6     1
-##  [88,]  1.2 -1 7     1
-##  [89,]  1.2 -1 8     1
-##  [90,]  1.2 -1 9     1
-##  [91,]  1.6 -1 0     1
-##  [92,]  1.6 -1 1     1
-##  [93,]  1.6 -1 2     1
-##  [94,]  1.6 -1 3     1
-##  [95,]  1.6 -1 4     1
-##  [96,]  1.6 -1 5     1
-##  [97,]  1.6 -1 6     1
-##  [98,]  1.6 -1 7     1
-##  [99,]  1.6 -1 8     1
-## [100,]  1.6 -1 9     1</code></pre>
+pander(XYZ)</code></pre>
+<table>
+<colgroup>
+<col width="6%" />
+<col width="5%" />
+<col width="5%" />
+<col width="9%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">x</th>
+<th align="center">y</th>
+<th align="center">z</th>
+<th align="center">dummy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">-2</td>
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-2</td>
+<td align="center">-1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-2</td>
+<td align="center">-1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-2</td>
+<td align="center">-1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-2</td>
+<td align="center">-1</td>
+<td align="center">4</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-2</td>
+<td align="center">-1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-2</td>
+<td align="center">-1</td>
+<td align="center">6</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-2</td>
+<td align="center">-1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-2</td>
+<td align="center">-1</td>
+<td align="center">8</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-2</td>
+<td align="center">-1</td>
+<td align="center">9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1.6</td>
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1.6</td>
+<td align="center">-1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1.6</td>
+<td align="center">-1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1.6</td>
+<td align="center">-1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1.6</td>
+<td align="center">-1</td>
+<td align="center">4</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1.6</td>
+<td align="center">-1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1.6</td>
+<td align="center">-1</td>
+<td align="center">6</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1.6</td>
+<td align="center">-1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1.6</td>
+<td align="center">-1</td>
+<td align="center">8</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1.6</td>
+<td align="center">-1</td>
+<td align="center">9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1.2</td>
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1.2</td>
+<td align="center">-1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1.2</td>
+<td align="center">-1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1.2</td>
+<td align="center">-1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1.2</td>
+<td align="center">-1</td>
+<td align="center">4</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1.2</td>
+<td align="center">-1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1.2</td>
+<td align="center">-1</td>
+<td align="center">6</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1.2</td>
+<td align="center">-1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-1.2</td>
+<td align="center">-1</td>
+<td align="center">8</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-1.2</td>
+<td align="center">-1</td>
+<td align="center">9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-0.8</td>
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-0.8</td>
+<td align="center">-1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-0.8</td>
+<td align="center">-1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-0.8</td>
+<td align="center">-1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-0.8</td>
+<td align="center">-1</td>
+<td align="center">4</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-0.8</td>
+<td align="center">-1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-0.8</td>
+<td align="center">-1</td>
+<td align="center">6</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-0.8</td>
+<td align="center">-1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-0.8</td>
+<td align="center">-1</td>
+<td align="center">8</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-0.8</td>
+<td align="center">-1</td>
+<td align="center">9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-0.4</td>
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-0.4</td>
+<td align="center">-1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-0.4</td>
+<td align="center">-1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-0.4</td>
+<td align="center">-1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-0.4</td>
+<td align="center">-1</td>
+<td align="center">4</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-0.4</td>
+<td align="center">-1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-0.4</td>
+<td align="center">-1</td>
+<td align="center">6</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-0.4</td>
+<td align="center">-1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">-0.4</td>
+<td align="center">-1</td>
+<td align="center">8</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">-0.4</td>
+<td align="center">-1</td>
+<td align="center">9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0</td>
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0</td>
+<td align="center">-1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0</td>
+<td align="center">-1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0</td>
+<td align="center">-1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0</td>
+<td align="center">-1</td>
+<td align="center">4</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0</td>
+<td align="center">-1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0</td>
+<td align="center">-1</td>
+<td align="center">6</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0</td>
+<td align="center">-1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0</td>
+<td align="center">-1</td>
+<td align="center">8</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0</td>
+<td align="center">-1</td>
+<td align="center">9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0.4</td>
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0.4</td>
+<td align="center">-1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0.4</td>
+<td align="center">-1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0.4</td>
+<td align="center">-1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0.4</td>
+<td align="center">-1</td>
+<td align="center">4</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0.4</td>
+<td align="center">-1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0.4</td>
+<td align="center">-1</td>
+<td align="center">6</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0.4</td>
+<td align="center">-1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0.4</td>
+<td align="center">-1</td>
+<td align="center">8</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0.4</td>
+<td align="center">-1</td>
+<td align="center">9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0.8</td>
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0.8</td>
+<td align="center">-1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0.8</td>
+<td align="center">-1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0.8</td>
+<td align="center">-1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0.8</td>
+<td align="center">-1</td>
+<td align="center">4</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0.8</td>
+<td align="center">-1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0.8</td>
+<td align="center">-1</td>
+<td align="center">6</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0.8</td>
+<td align="center">-1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">0.8</td>
+<td align="center">-1</td>
+<td align="center">8</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">0.8</td>
+<td align="center">-1</td>
+<td align="center">9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1.2</td>
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1.2</td>
+<td align="center">-1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1.2</td>
+<td align="center">-1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1.2</td>
+<td align="center">-1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1.2</td>
+<td align="center">-1</td>
+<td align="center">4</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1.2</td>
+<td align="center">-1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1.2</td>
+<td align="center">-1</td>
+<td align="center">6</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1.2</td>
+<td align="center">-1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1.2</td>
+<td align="center">-1</td>
+<td align="center">8</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1.2</td>
+<td align="center">-1</td>
+<td align="center">9</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1.6</td>
+<td align="center">-1</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1.6</td>
+<td align="center">-1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1.6</td>
+<td align="center">-1</td>
+<td align="center">2</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1.6</td>
+<td align="center">-1</td>
+<td align="center">3</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1.6</td>
+<td align="center">-1</td>
+<td align="center">4</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1.6</td>
+<td align="center">-1</td>
+<td align="center">5</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1.6</td>
+<td align="center">-1</td>
+<td align="center">6</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1.6</td>
+<td align="center">-1</td>
+<td align="center">7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">1.6</td>
+<td align="center">-1</td>
+<td align="center">8</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center">1.6</td>
+<td align="center">-1</td>
+<td align="center">9</td>
+<td align="center">1</td>
+</tr>
+</tbody>
+</table>
 <p>Bila ty = 0:</p>
 <pre class="r"><code>theta &lt;- 0*pi
 t &lt;- c(0, 0, 0)
 names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
-t</code></pre>
-<pre><code>## x y z 
-## 0 0 0</code></pre>
+pander(t)</code></pre>
+<p><em>0</em>, <em>0</em> and <em>0</em></p>
 <pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
                sin(theta),  cos(theta), 0, t[&#39;y&#39;],
                0,           0,          1, t[&#39;z&#39;]),
              ncol=4, byrow=TRUE)
-Rt</code></pre>
-<pre><code>##      [,1] [,2] [,3] [,4]
-## [1,]    1    0    0    0
-## [2,]    0    1    0    0
-## [3,]    0    0    1    0</code></pre>
+pander(Rt)</code></pre>
+<table>
+<colgroup>
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr class="even">
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr class="odd">
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code># ramean
 sUV &lt;- t(CM %*% Rt %*% t(XYZ))
 colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
@@ -462,28 +1579,50 @@ library(ggplot2)
 df &lt;- data.frame(UV)
 #df
 ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
-  geom_point(aes(color=s)) +
+  geom_point(aes(color=s, size=10-s), alpha=0.8) +
   scale_y_reverse(limits=c(360, 0), breaks=c(0, 120, 240)) + 
   scale_x_continuous(limits=c(0, 480), breaks=c(0, 160, 320)) +
   ggtitle(&#39;2Dimage range is (0,0)..(320,240)&#39;)</code></pre>
-<pre><code>## Warning: Removed 8 rows containing missing values (geom_point).</code></pre>
 <p><img src="3dreconstruction_files/figure-html/unnamed-chunk-10-1.png" title="" alt="" width="672" /></p>
 <p>Bila theta = pi/11: (terhadap sumbu z[depan-belakang])</p>
 <pre class="r"><code>theta &lt;- pi/11
 t &lt;- c(0, 0, 0)
 names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
-t</code></pre>
-<pre><code>## x y z 
-## 0 0 0</code></pre>
+pander(t)</code></pre>
+<p><em>0</em>, <em>0</em> and <em>0</em></p>
 <pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
                sin(theta),  cos(theta), 0, t[&#39;y&#39;],
                0,           0,          1, t[&#39;z&#39;]),
              ncol=4, byrow=TRUE)
-Rt</code></pre>
-<pre><code>##           [,1]       [,2] [,3] [,4]
-## [1,] 0.9594930 -0.2817326    0    0
-## [2,] 0.2817326  0.9594930    0    0
-## [3,] 0.0000000  0.0000000    1    0</code></pre>
+pander(Rt)</code></pre>
+<table>
+<colgroup>
+<col width="9%" />
+<col width="11%" />
+<col width="2%" />
+<col width="2%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="left">0.9595</td>
+<td align="left">-0.2817</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr class="even">
+<td align="left">0.2817</td>
+<td align="left">0.9595</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr class="odd">
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code># ramean
 sUV &lt;- t(CM %*% Rt %*% t(XYZ))
 colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
@@ -500,27 +1639,49 @@ library(ggplot2)
 df &lt;- data.frame(UV)
 #df
 ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
-  geom_point(aes(color=s)) +
+  geom_point(aes(color=s, size=10-s), alpha=0.8) +
   scale_y_reverse(limits=c(360, 0), breaks=c(0, 120, 240)) + 
   scale_x_continuous(limits=c(0, 480), breaks=c(0, 160, 320)) +
   ggtitle(&#39;2Dimage range is (0,0)..(320,240)&#39;)</code></pre>
-<pre><code>## Warning: Removed 6 rows containing missing values (geom_point).</code></pre>
 <p><img src="3dreconstruction_files/figure-html/unnamed-chunk-11-1.png" title="" alt="" width="672" /></p>
 <p>Bila ty = -1: (kamera agak ke atas)</p>
 <pre class="r"><code>t &lt;- c(0, -1, 0)
 names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
-t</code></pre>
-<pre><code>##  x  y  z 
-##  0 -1  0</code></pre>
+pander(t)</code></pre>
+<p><em>0</em>, <em>-1</em> and <em>0</em></p>
 <pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
                sin(theta),  cos(theta), 0, t[&#39;y&#39;],
                0,           0,          1, t[&#39;z&#39;]),
              ncol=4, byrow=TRUE)
-Rt</code></pre>
-<pre><code>##           [,1]       [,2] [,3] [,4]
-## [1,] 0.9594930 -0.2817326    0    0
-## [2,] 0.2817326  0.9594930    0   -1
-## [3,] 0.0000000  0.0000000    1    0</code></pre>
+pander(Rt)</code></pre>
+<table>
+<colgroup>
+<col width="9%" />
+<col width="11%" />
+<col width="2%" />
+<col width="2%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="left">0.9595</td>
+<td align="left">-0.2817</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr class="even">
+<td align="left">0.2817</td>
+<td align="left">0.9595</td>
+<td align="left">0</td>
+<td align="left">-1</td>
+</tr>
+<tr class="odd">
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code># ramean
 sUV &lt;- t(CM %*% Rt %*% t(XYZ))
 colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
@@ -537,27 +1698,49 @@ library(ggplot2)
 df &lt;- data.frame(UV)
 #df
 ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
-  geom_point(aes(color=s)) +
+  geom_point(aes(color=s, size=10-s), alpha=0.8) +
   scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
   scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
   ggtitle(&#39;2Dimage range is (0,0)..(320,240)&#39;)</code></pre>
-<pre><code>## Warning: Removed 4 rows containing missing values (geom_point).</code></pre>
 <p><img src="3dreconstruction_files/figure-html/unnamed-chunk-12-1.png" title="" alt="" width="672" /></p>
 <p>Bila ty = +2: (kamera di bawah lantai)</p>
 <pre class="r"><code>t &lt;- c(0, +2, 0)
 names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
-t</code></pre>
-<pre><code>## x y z 
-## 0 2 0</code></pre>
+pander(t)</code></pre>
+<p><em>0</em>, <em>2</em> and <em>0</em></p>
 <pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
                sin(theta),  cos(theta), 0, t[&#39;y&#39;],
                0,           0,          1, t[&#39;z&#39;]),
              ncol=4, byrow=TRUE)
-Rt</code></pre>
-<pre><code>##           [,1]       [,2] [,3] [,4]
-## [1,] 0.9594930 -0.2817326    0    0
-## [2,] 0.2817326  0.9594930    0    2
-## [3,] 0.0000000  0.0000000    1    0</code></pre>
+pander(Rt)</code></pre>
+<table>
+<colgroup>
+<col width="9%" />
+<col width="11%" />
+<col width="2%" />
+<col width="2%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="left">0.9595</td>
+<td align="left">-0.2817</td>
+<td align="left">0</td>
+<td align="left">0</td>
+</tr>
+<tr class="even">
+<td align="left">0.2817</td>
+<td align="left">0.9595</td>
+<td align="left">0</td>
+<td align="left">2</td>
+</tr>
+<tr class="odd">
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code># ramean
 sUV &lt;- t(CM %*% Rt %*% t(XYZ))
 colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
@@ -574,11 +1757,10 @@ library(ggplot2)
 df &lt;- data.frame(UV)
 #df
 ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
-  geom_point(aes(color=s)) +
+  geom_point(aes(color=s, size=10-s), alpha=0.8) +
   scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
   scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
   ggtitle(&#39;2Dimage range is (0,0)..(320,240)&#39;)</code></pre>
-<pre><code>## Warning: Removed 14 rows containing missing values (geom_point).</code></pre>
 <p><img src="3dreconstruction_files/figure-html/unnamed-chunk-13-1.png" title="" alt="" width="672" /></p>
 </div>
 <div id="d-reconstruction-from-2d" class="section level2">
@@ -587,24 +1769,88 @@ ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
 <pre class="r"><code>theta &lt;- 0*pi
 t &lt;- c(0, 0, 0)
 names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
-t</code></pre>
-<pre><code>## x y z 
-## 0 0 0</code></pre>
+pander(t)</code></pre>
+<p><em>0</em>, <em>0</em> and <em>0</em></p>
 <pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
                sin(theta),  cos(theta), 0, t[&#39;y&#39;],
                0,           0,          1, t[&#39;z&#39;]),
              ncol=4, byrow=TRUE)
-Rt</code></pre>
-<pre><code>##      [,1] [,2] [,3] [,4]
-## [1,]    1    0    0    0
-## [2,]    0    1    0    0
-## [3,]    0    0    1    0</code></pre>
+colnames(Rt) &lt;- c(&#39;r1&#39;, &#39;r2&#39;, &#39;r3&#39;, &#39;t&#39;)
+pander(Rt)</code></pre>
+<table>
+<colgroup>
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">r1</th>
+<th align="center">r2</th>
+<th align="center">r3</th>
+<th align="center">t</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">0</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">0</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code>CMRt &lt;- CM %*% Rt
-CMRt</code></pre>
-<pre><code>##          [,1]      [,2] [,3] [,4]
-## [1,] 207.2289    0.0000  160    0
-## [2,]   0.0000 -207.2289  120    0
-## [3,]   0.0000    0.0000    1    0</code></pre>
+pander(CMRt)</code></pre>
+<table>
+<colgroup>
+<col width="8%" />
+<col width="9%" />
+<col width="6%" />
+<col width="6%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">r1</th>
+<th align="center">r2</th>
+<th align="center">r3</th>
+<th align="center">t</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">207.2</td>
+<td align="center">0</td>
+<td align="center">160</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">0</td>
+<td align="center">-207.2</td>
+<td align="center">120</td>
+<td align="center">0</td>
+</tr>
+<tr class="odd">
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">0</td>
+</tr>
+</tbody>
+</table>
 <p>Bila diketahui: u, v, dan y dari object, maka:</p>
 <pre class="r"><code># xyz yang diinginkan: c(0.8, -1.0, 6.0)
 # uv(s) adalah: c(187.6305 154.5382) -&gt; kalau di imagespace, cuma c(188, 154, dummy=1) dan agak nggak akurat
@@ -617,44 +1863,37 @@ dy &lt;- yObject - yCamera
 uv &lt;- c(188, 154, 1)
 xyz &lt;- solve(qr(CMRt), uv)
 names(xyz) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
-xyz</code></pre>
-<pre><code>##          x          y          z       &lt;NA&gt; 
-##  0.1351163 -0.1640698  1.0000000  0.0000000</code></pre>
+pander(xyz)</code></pre>
+<p><em>0.1351</em>, <em>-0.1641</em>, <em>1</em> and <em>0</em></p>
 <pre class="r"><code># s = dy / (y hasil solve)
 s &lt;- dy / xyz[&#39;y&#39;]
-s</code></pre>
-<pre><code>##        y 
-## 6.094968</code></pre>
+pander(s)</code></pre>
+<p><em>6.095</em></p>
 <pre class="r"><code># kalikan hasil solve dengan s, maka didapatkan xyz sebenarnya
 # yaitu: c(0.8, -1.0, 6.0) +- galat
 xyz &lt;- xyz * s
-xyz</code></pre>
-<pre><code>##          x          y          z       &lt;NA&gt; 
-##  0.8235294 -1.0000000  6.0949681  0.0000000</code></pre>
+pander(xyz)</code></pre>
+<p><em>0.8235</em>, <em>-1</em>, <em>6.095</em> and <em>0</em></p>
 <p>Terus kita ingin mengetahui tinggi dari objek tersebut, bila diketahui x,y,z,u,v dari kaki, lalu v dari ujung kepala.</p>
 <pre class="r"><code>uv.head = c(188, 140, 1) # tingginya 14 pixel di camera
 xyz.head &lt;- solve(qr(CMRt), uv.head)
 names(xyz.head) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
-xyz.head</code></pre>
-<pre><code>##           x           y           z        &lt;NA&gt; 
-##  0.13511628 -0.09651163  1.00000000  0.00000000</code></pre>
+pander(xyz.head)</code></pre>
+<p><em>0.1351</em>, <em>-0.09651</em>, <em>1</em> and <em>0</em></p>
 <pre class="r"><code># s sudah didapatkan di atas
 # kalikan hasil solve dengan s, maka didapatkan xyz sebenarnya
 # di mana bs dipastikan bahwa x.head == x.foot, z.head==z.foot
 # kalau misalnya ga sama, berarti s-nya salah
 # cuma belum dicoba kalau kameranya berotasi...
 xyz.head &lt;- xyz.head * s
-xyz.head</code></pre>
-<pre><code>##          x          y          z       &lt;NA&gt; 
-##  0.8235294 -0.5882353  6.0949681  0.0000000</code></pre>
-<pre class="r"><code>c(xyz.head[&#39;x&#39;] == xyz[&#39;x&#39;], xyz.head[&#39;z&#39;] == xyz[&#39;z&#39;])</code></pre>
-<pre><code>##    x    z 
-## TRUE TRUE</code></pre>
+pander(xyz.head)</code></pre>
+<p><em>0.8235</em>, <em>-0.5882</em>, <em>6.095</em> and <em>0</em></p>
+<pre class="r"><code>pander(c(xyz.head[&#39;x&#39;] == xyz[&#39;x&#39;], xyz.head[&#39;z&#39;] == xyz[&#39;z&#39;]))</code></pre>
+<p>TRUE TRUE</p>
 <pre class="r"><code># tinggi orang adalah xyz.head[y] - xyz.foot[y]
 person.height &lt;- xyz.head[&#39;y&#39;] - xyz[&#39;y&#39;]
-person.height</code></pre>
-<pre><code>##         y 
-## 0.4117647</code></pre>
+pander(person.height)</code></pre>
+<p><em>0.4118</em></p>
 <p>dan dengan yang cara yang sama, harusnya ini juga bisa digunakan untuk mengetahui lebar (kiri..kanan) dari objek / batas koordinat menurut sumbu x.</p>
 </div>
 <div id="implementasi-di-c" class="section level2">
@@ -695,6 +1934,19 @@ person.height</code></pre>
 </div>
 <div id="rotasi-3d" class="section level2">
 <h2>Rotasi 3D</h2>
+<p>Recall pedoman rotasi sebagai berikut:</p>
+<ul>
+<li>Pitch (RX): Looking up and down (0=Straight Ahead, +Up, -Down).</li>
+<li>Roll (RY): Rotation about axis of screen, 0=Straight, +Clockwise, -CCW.</li>
+<li>Yaw (RZ): Rotating around (running in circles), 0=North, +West, -East. Kalo di Unreal: 0=East, +North, -South.</li>
+</ul>
+<p>Perhatikan bahwa tugas <code>Rt</code> adalah mentranslasi lalu merotasi titik 3D agar berada dalam koordinat kamera. Jadi bisa disimpulkan bahwa translasi <code>t</code> = (-x, -y, -z) dari kamera, dan <code>(α, β, γ)</code> = (-pitch, -roll, -yaw) rotasi kamera.</p>
+<p>Dari <a href="https://en.wikipedia.org/wiki/Rotation_matrix#Basic_rotations">Rotation matrix: In three dimensions</a> maka bisa disimpulkan:</p>
+<p><math xmlns="http://www.w3.org/1998/Math/MathML"> <mrow class="MJX-TeXAtom-ORD"> <mstyle displaystyle="true"> <mtable columnalign="right left" rowspacing="0.9em 0.9em 0.3em" columnspacing="0em 0em"> <mtr> <mtd> <msub> <mi>R</mi> <mi>x</mi> </msub> <mo stretchy="false">(</mo> <mi>α</mi> <mo stretchy="false">)</mo> </mtd> <mtd> <mo lspace="mediummathspace" form="infix">=</mo> <mrow open="[" close="]"> <mo>[</mo> <mtable rowspacing="4pt 0.7em 0.7em" columnspacing="1em"> <mtr> <mtd> <mn>1</mn> </mtd> <mtd> <mn>0</mn> </mtd> <mtd> <mn>0</mn> </mtd> </mtr> <mtr> <mtd> <mn>0</mn> </mtd> <mtd> <mi>cos</mi> <mo>a<!-- a --></mo> <mi>α</mi> </mtd> <mtd> <mo>−<!-- − --></mo> <mi>sin</mi> <mo>a<!-- a --></mo> <mi>α</mi> </mtd> </mtr> <mtr> <mtd> <mn>0</mn> </mtd> <mtd> <mi>sin</mi> <mo>a<!-- a --></mo> <mi>α</mi> </mtd> <mtd> <mi>cos</mi> <mo>a<!-- a --></mo> <mi>α</mi> </mtd> </mtr> </mtable> <mo>]</mo> </mrow> </mtd> </mtr> <mtr> <mtd> <msub> <mi>R</mi> <mi>y</mi> </msub> <mo stretchy="false">(</mo> <mi>β</mi> <mo stretchy="false">)</mo> </mtd> <mtd> <mo lspace="mediummathspace" form="infix">=</mo> <mrow open="[" close="]"> <mo>[</mo> <mtable rowspacing="0.7em 0.7em 0.4em" columnspacing="1em"> <mtr> <mtd> <mi>cos</mi> <mo>a<!-- a --></mo> <mi>β</mi> </mtd> <mtd> <mn>0</mn> </mtd> <mtd> <mi>sin</mi> <mo>a<!-- a --></mo> <mi>β</mi> </mtd> </mtr> <mtr> <mtd> <mn>0</mn> </mtd> <mtd> <mn>1</mn> </mtd> <mtd> <mn>0</mn> </mtd> </mtr> <mtr> <mtd> <mo>−<!-- − --></mo> <mi>sin</mi> <mo>a<!-- a --></mo> <mi>β</mi> </mtd> <mtd> <mn>0</mn> </mtd> <mtd> <mi>cos</mi> <mo>a<!-- a --></mo> <mi>β</mi> </mtd> </mtr> </mtable> <mo>]</mo> </mrow> </mtd> </mtr> <mtr> <mtd> <msub> <mi>R</mi> <mi>z</mi> </msub> <mo stretchy="false">(</mo> <mi>γ</mi> <mo stretchy="false">)</mo> </mtd> <mtd> <mo lspace="mediummathspace" form="infix">=</mo> <mrow open="[" close="]"> <mo>[</mo> <mtable rowspacing="0.7em 0.7em 0.4em" columnspacing="1em"> <mtr> <mtd> <mi>cos</mi> <mo>a<!-- a --></mo> <mi>γ</mi> </mtd> <mtd> <mo>−<!-- − --></mo> <mi>sin</mi> <mo>a<!-- a --></mo> <mi>γ</mi> </mtd> <mtd> <mn>0</mn> </mtd> </mtr> <mtr> <mtd> <mi>sin</mi> <mo>a<!-- a --></mo> <mi>γ</mi> </mtd> <mtd> <mi>cos</mi> <mo>a<!-- a --></mo> <mi>γ</mi> </mtd> <mtd> <mn>0</mn> </mtd> </mtr> <mtr> <mtd> <mn>0</mn> </mtd> <mtd> <mn>0</mn> </mtd> <mtd> <mn>1</mn> </mtd> </mtr> </mtable> <mo>]</mo> </mrow> </mtd> </mtr> </mtable> </mstyle> </mrow> </math></p>
+<p>Untuk menggabungkan RX, RY, dan RZ untuk proyeksi ada 2 kemungkinan, salah satunya pasti benar :P Untuk membuktikan, tinggal test pakai pitch dan yaw saja (jangan roll, biar gak pusing) plus translation.</p>
+<p><math xmlns="http://www.w3.org/1998/Math/MathML"> <mrow class="MJX-TeXAtom-ORD"> <mstyle displaystyle="true"> <mi>R</mi> <mo>=</mo> <msub> <mi>R</mi> <mi>z</mi> </msub> <mo stretchy="false">(</mo> <mi>γ</mi> <mo stretchy="false">)</mo> <mspace width="thinmathspace"></mspace> <msub> <mi>R</mi> <mi>y</mi> </msub> <mo stretchy="false">(</mo> <mi>β<!-- β --></mi> <mo stretchy="false">)</mo> <mspace width="thinmathspace"></mspace> <msub> <mi>R</mi> <mi>x</mi> </msub> <mo stretchy="false">(</mo> <mi>α</mi> <mo stretchy="false">)</mo> <mspace width="thinmathspace"></mspace> <mspace width="negativethinmathspace"></mspace> </mstyle> </mrow> </math></p>
+<p>atau:</p>
+<p><math xmlns="http://www.w3.org/1998/Math/MathML"> <mrow class="MJX-TeXAtom-ORD"> <mstyle displaystyle="true"> <mi>R</mi> <mo>=</mo> <msub> <mi>R</mi> <mi>x</mi> </msub> <mo stretchy="false">(</mo> <mi>α<!-- α --></mi> <mo stretchy="false">)</mo> <mspace width="thinmathspace"></mspace> <msub> <mi>R</mi> <mi>y</mi> </msub> <mo stretchy="false">(</mo> <mi>β<!-- β --></mi> <mo stretchy="false">)</mo> <mspace width="thinmathspace"></mspace> <msub> <mi>R</mi> <mi>z</mi> </msub> <mo stretchy="false">(</mo> <mi>γ<!-- γ --></mi> <mo stretchy="false">)</mo> <mspace width="thinmathspace"></mspace> <mspace width="negativethinmathspace"></mspace> </mstyle> </mrow> </math></p>
 <p>Dari <a href="http://jepsonsblog.blogspot.com/2012/11/rotation-in-3d-using-opencvs.html">Rotation in 3D using OpenCV</a>:</p>
 <pre><code>// Rotation matrices around the X, Y, and Z axis
 Mat RX = (Mat_&lt;double&gt;(4, 4) &lt;&lt;

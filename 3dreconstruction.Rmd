@@ -7,6 +7,38 @@ output:
     self_contained: no
 ---
 
+## Metrics Units/Scale and 3D Coordinate Systems
+
+Unreal Units (UU) are 1 cm, 0.01 of Blender/SecondLife. +x forward, +y right, +z up.
+
+Unity Units are by default 1 m, terbukti dari setting gravity default 9.81 (m/s) yang sesuai reality, tapi memang Unity lebih lax dalam urusan unit.
+x+ right, y+ up, z+ away.
+
+Blender Units (BU) are usually 1 m. See [Static Mesh from Blender](https://wiki.unrealengine.com/Static_Mesh_from_Blender).
+Left handed: +x is to right, +y away, +z up. 
+
+* Dari Blender, pas export FBX, gunakan export scale 1 aja, jadi unit si model tetap meter.
+* Di Unreal, pas import FBX, gunakan import scale 0.01. Dari meter menjadi cm.
+* Di Unity, pas import FBX, gunakan import scale 1. Dari meter tetap meter.
+
+[Second Life / OpenSimulator](http://wiki.secondlife.com/wiki/Coordinate) uses meters.
+A sim is 256×256 (x×y) meters. x is longitude (from west to east, the wiki is partially incorrect, but the examples are good and are [verified here](http://xahsl.org/sl/build_pos.html)), y is latitude (from south to north).
+z is altitude where 0 is lowest possible point.
+When someone is facing north, this is exactly same as Blender.
+
+Dalam sistem Lumen yang dipakai sebagai standar adalah sistem Second Life. Jadi pada saat image recognition/tracking, semua koordinatnya menggunakan aturan Second Life.
+
+* Dari koordinat Lumen ke Unreal, pada saat visualisasi Unreal, maka swap x dan y lalu koordinatnya akan discale menjadi Unreal Units (×0.01). Sebaliknya dari Unreal ke Lumen, koordinatenya discale menjadi SecondLife/Blender units (×100) lalu swap x dan y.
+* Dari koordinat Lumen ke Unity, pada saat visualisasi Unity, maka koordinatnya akan di-rotate 90degrees for X (pitch) sehingga y+ up dan z+ away. Sebaliknya dari Unity ke Lumen, koordinatenya dirotate -90degrees for X (pitch) menjadi SecondLife/Blender coordinates (y+ away, +z up).
+
+Untuk rotasi 3D, menggunakan style Blender/SecondLife. See also: [rotation Unreal](https://docs.unrealengine.com/latest/INT/API/Runtime/Core/Math/FRotator/index.html). Unit sudut adalah degrees, karena sudut degrees juga dipakai oleh Unreal/Unity/Blender. Pas kalkulasi internal baru diubah ke radian. Nama sudutnya buka alpha, beta, gamma tapi yang lebih deskriptif yaitu pitch (tengadah), roll (geleng clockwise), yaw (menoleh ke kiri):
+
+* Pitch (RX):  Looking up and down (0=Straight Ahead, +Up, -Down).
+* Roll (RY): Rotation about axis of screen, 0=Straight, +Clockwise, -CCW.
+* Yaw (RZ):	Rotating around (running in circles), 0=North, +West, -East. Kalo di Unreal: 0=East, +North, -South.
+
+## 3D Reconstruction
+
 Formula: http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html
 
 ```
@@ -40,6 +72,7 @@ Maka
 Maka
 
 ```{r}
+library(pander)
 # 35mm lens on Sony Alpha 7r
 focalLength <- 35 #mm
 imageWidth <- 320 #px
@@ -51,7 +84,7 @@ centerY <- imageHeight / 2 #px
 CM <- matrix(c(focalLength * imageWidth / sensorWidth, 0, centerX,
                0, -focalLength * imageHeight / sensorHeight, centerY,
                0, 0, 1), ncol=3, byrow=TRUE)
-CM
+pander(CM, caption='camera matrix')
 ```
 
 Contoh: Samsung Galaxy S4:
@@ -68,12 +101,17 @@ imageWidth <- 320 #px
 imageHeight <- 240 #px
 sensorWidth <- 6.64 #mm
 sensorHeight <- 4.98 #mm
-centerX <- imageWidth / 2 #px
-centerY <- imageHeight / 2 #px
-CM <- matrix(c(focalLength * imageWidth / sensorWidth, 0, centerX,
-               0, -focalLength * imageHeight / sensorHeight, centerY,
-               0, 0, 1), ncol=3, byrow=TRUE)
-CM
+center <- c(imageWidth / 2, imageHeight / 2) #px
+names(center) <- c('u', 'v')
+f <- c(focalLength * imageWidth / sensorWidth, focalLength * imageHeight / sensorHeight)
+names(f) <- c('x', 'y')
+pander(f)
+all.equal(f['x'], f['y'], check.names=FALSE) # harusnya f['x'] ~ f['y'] yaaa!!
+CM <- matrix(c(f['x'],       0, center['u'],
+                    0, -f['y'], center['v'],
+                    0,       0,           1),
+             ncol=3, byrow=TRUE)
+pander(CM, caption='camera matrix')
 ```
 
 Kalau udah punya CM maka perlu bikin joint rotation-translation matrix. Ini Hendy agak bingung jadi biarin Sigit aja yang pusing :p
@@ -82,13 +120,13 @@ Kalau udah punya CM maka perlu bikin joint rotation-translation matrix. Ini Hend
 theta <- 0*pi # harusnya ini gamma, lihat penjelasan di bawah tentang rotasi 3D
 t <- c(0, 0, 0)
 names(t) <- c('x', 'y', 'z')
-t
+pander(t)
 # rotasi ini sebenarnya masih RZ, belum R
 Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
                sin(theta),  cos(theta), 0, t['y'],
                0,           0,          1, t['z']),
              ncol=4, byrow=TRUE)
-Rt
+pander(Rt)
 ```
 
 Dari sini kita bisa memproyeksikan sebuah titik 3D ke 2D.
@@ -113,7 +151,7 @@ XYZ <- matrix(c(  0,   0,0.01,  1, # persis di tengah
                   2,   4,   5,  1),# depan banget, kanan atas
               ncol=4, byrow=TRUE)
 colnames(XYZ) <- c('x', 'y', 'z', '1')
-XYZ
+pander(XYZ)
 ```
 
 Tinggal dikalikan dech:
@@ -121,9 +159,9 @@ Tinggal dikalikan dech:
 ```{r}
 sUV <- t(CM %*% Rt %*% XYZ[4,]) # point ke-4
 names(sUV) <- c('u', 'v', 's')
-sUV
+pander(sUV)
 if (sUV['s'] != 0) UV <- sUV / sUV['s'] else UV <- sUV
-UV
+pander(UV)
 ```
 
 Atau ramean:
@@ -131,24 +169,24 @@ Atau ramean:
 ```{r}
 sUV <- t(CM %*% Rt %*% t(XYZ))
 colnames(sUV) <- c('su', 'sv', 's')
-sUV
+pander(sUV)
 UV <- matrix(ncol = 3, nrow = nrow(sUV))
 colnames(UV) <- c('u', 'v', 's')
 UV[,'u'] <- sUV[,'su'] / sUV[,'s']
 UV[,'v'] <- sUV[,'sv'] / sUV[,'s']
 UV[,'s'] <- sUV[,'s']
-UV
+pander(UV)
 ```
 
 Yuk coba kita plot.
 
-```{r}
+```{r, warning=FALSE}
 library(ggplot2)
 df <- data.frame(UV)
 df$id <- rownames(df)
 df$salpha <- min(max(df$s/5, 0), 1)
 df$dsize <- pmin(10/df$s, 20)
-df
+pander(df)
 ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
   geom_text(aes(label=id, color=id)) + #,size=dsize
   scale_y_reverse() +
@@ -157,15 +195,15 @@ ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
 
 Experimen apabila Rt diganti sedikit:
 
-```{r}
+```{r, warning=FALSE}
 t <- c(1, 0, 0)
 names(t) <- c('x', 'y', 'z')
-t
+pander(t)
 Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
                sin(theta),  cos(theta), 0, t['y'],
                0,           0,          1, t['z']),
              ncol=4, byrow=TRUE)
-Rt
+pander(Rt)
 
 # ramean
 sUV <- t(CM %*% Rt %*% t(XYZ))
@@ -181,7 +219,7 @@ UV[,'s'] <- sUV[,'s']
 # plot
 library(ggplot2)
 df <- data.frame(UV)
-df
+pander(df)
 ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
   geom_text(label=rownames(df), color=rownames(df)) +
   scale_y_reverse() +
@@ -203,21 +241,21 @@ for (i in 0:9) {
     XYZ[i * 10 + j + 1,] <- c(x, y, z, 1)
   }
 }
-XYZ
+pander(XYZ)
 ```
 
 Bila ty = 0:
 
-```{r}
+```{r, warning=FALSE}
 theta <- 0*pi
 t <- c(0, 0, 0)
 names(t) <- c('x', 'y', 'z')
-t
+pander(t)
 Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
                sin(theta),  cos(theta), 0, t['y'],
                0,           0,          1, t['z']),
              ncol=4, byrow=TRUE)
-Rt
+pander(Rt)
 
 # ramean
 sUV <- t(CM %*% Rt %*% t(XYZ))
@@ -235,7 +273,7 @@ library(ggplot2)
 df <- data.frame(UV)
 #df
 ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
-  geom_point(aes(color=s)) +
+  geom_point(aes(color=s, size=10-s), alpha=0.8) +
   scale_y_reverse(limits=c(360, 0), breaks=c(0, 120, 240)) + 
   scale_x_continuous(limits=c(0, 480), breaks=c(0, 160, 320)) +
   ggtitle('2Dimage range is (0,0)..(320,240)')
@@ -243,16 +281,16 @@ ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
 
 Bila theta = pi/11: (terhadap sumbu z[depan-belakang])
 
-```{r}
+```{r, warning=FALSE}
 theta <- pi/11
 t <- c(0, 0, 0)
 names(t) <- c('x', 'y', 'z')
-t
+pander(t)
 Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
                sin(theta),  cos(theta), 0, t['y'],
                0,           0,          1, t['z']),
              ncol=4, byrow=TRUE)
-Rt
+pander(Rt)
 
 # ramean
 sUV <- t(CM %*% Rt %*% t(XYZ))
@@ -270,7 +308,7 @@ library(ggplot2)
 df <- data.frame(UV)
 #df
 ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
-  geom_point(aes(color=s)) +
+  geom_point(aes(color=s, size=10-s), alpha=0.8) +
   scale_y_reverse(limits=c(360, 0), breaks=c(0, 120, 240)) + 
   scale_x_continuous(limits=c(0, 480), breaks=c(0, 160, 320)) +
   ggtitle('2Dimage range is (0,0)..(320,240)')
@@ -278,15 +316,15 @@ ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
 
 Bila ty = -1: (kamera agak ke atas)
 
-```{r}
+```{r, warning=FALSE}
 t <- c(0, -1, 0)
 names(t) <- c('x', 'y', 'z')
-t
+pander(t)
 Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
                sin(theta),  cos(theta), 0, t['y'],
                0,           0,          1, t['z']),
              ncol=4, byrow=TRUE)
-Rt
+pander(Rt)
 
 # ramean
 sUV <- t(CM %*% Rt %*% t(XYZ))
@@ -304,7 +342,7 @@ library(ggplot2)
 df <- data.frame(UV)
 #df
 ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
-  geom_point(aes(color=s)) +
+  geom_point(aes(color=s, size=10-s), alpha=0.8) +
   scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
   scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
   ggtitle('2Dimage range is (0,0)..(320,240)')
@@ -312,15 +350,15 @@ ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
 
 Bila ty = +2: (kamera di bawah lantai)
 
-```{r}
+```{r, warning=FALSE}
 t <- c(0, +2, 0)
 names(t) <- c('x', 'y', 'z')
-t
+pander(t)
 Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
                sin(theta),  cos(theta), 0, t['y'],
                0,           0,          1, t['z']),
              ncol=4, byrow=TRUE)
-Rt
+pander(Rt)
 
 # ramean
 sUV <- t(CM %*% Rt %*% t(XYZ))
@@ -338,7 +376,7 @@ library(ggplot2)
 df <- data.frame(UV)
 #df
 ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
-  geom_point(aes(color=s)) +
+  geom_point(aes(color=s, size=10-s), alpha=0.8) +
   scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
   scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
   ggtitle('2Dimage range is (0,0)..(320,240)')
@@ -352,15 +390,16 @@ First, we multiply the CM with Rt:
 theta <- 0*pi
 t <- c(0, 0, 0)
 names(t) <- c('x', 'y', 'z')
-t
+pander(t)
 Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
                sin(theta),  cos(theta), 0, t['y'],
                0,           0,          1, t['z']),
              ncol=4, byrow=TRUE)
-Rt
+colnames(Rt) <- c('r1', 'r2', 'r3', 't')
+pander(Rt)
 
 CMRt <- CM %*% Rt
-CMRt
+pander(CMRt)
 ```
 
 Bila diketahui: u, v, dan y dari object, maka:
@@ -377,14 +416,14 @@ dy <- yObject - yCamera
 uv <- c(188, 154, 1)
 xyz <- solve(qr(CMRt), uv)
 names(xyz) <- c('x', 'y', 'z')
-xyz
+pander(xyz)
 # s = dy / (y hasil solve)
 s <- dy / xyz['y']
-s
+pander(s)
 # kalikan hasil solve dengan s, maka didapatkan xyz sebenarnya
 # yaitu: c(0.8, -1.0, 6.0) +- galat
 xyz <- xyz * s
-xyz
+pander(xyz)
 ```
 
 Terus kita ingin mengetahui tinggi dari objek tersebut,
@@ -394,18 +433,18 @@ bila diketahui x,y,z,u,v dari kaki, lalu v dari ujung kepala.
 uv.head = c(188, 140, 1) # tingginya 14 pixel di camera
 xyz.head <- solve(qr(CMRt), uv.head)
 names(xyz.head) <- c('x', 'y', 'z')
-xyz.head
+pander(xyz.head)
 # s sudah didapatkan di atas
 # kalikan hasil solve dengan s, maka didapatkan xyz sebenarnya
 # di mana bs dipastikan bahwa x.head == x.foot, z.head==z.foot
 # kalau misalnya ga sama, berarti s-nya salah
 # cuma belum dicoba kalau kameranya berotasi...
 xyz.head <- xyz.head * s
-xyz.head
-c(xyz.head['x'] == xyz['x'], xyz.head['z'] == xyz['z'])
+pander(xyz.head)
+pander(c(xyz.head['x'] == xyz['x'], xyz.head['z'] == xyz['z']))
 # tinggi orang adalah xyz.head[y] - xyz.foot[y]
 person.height <- xyz.head['y'] - xyz['y']
-person.height
+pander(person.height)
 ```
 
 dan dengan yang cara yang sama, harusnya ini juga bisa digunakan untuk mengetahui lebar (kiri..kanan) dari objek / batas koordinat menurut sumbu x.
@@ -454,6 +493,284 @@ Di kantor Bippo:
     7.  5 petak dari kamera (0, 0, 1.5)
 
 ## Rotasi 3D
+
+Recall pedoman rotasi sebagai berikut:
+
+* Pitch (RX):  Looking up and down (0=Straight Ahead, +Up, -Down).
+* Roll (RY): Rotation about axis of screen, 0=Straight, +Clockwise, -CCW.
+* Yaw (RZ):  Rotating around (running in circles), 0=North, +West, -East. Kalo di Unreal: 0=East, +North, -South.
+
+Perhatikan bahwa tugas `Rt` adalah mentranslasi lalu merotasi titik 3D agar berada dalam koordinat kamera.
+Jadi bisa disimpulkan bahwa translasi `t` = (-x, -y, -z) dari kamera, dan `(α, β, γ)` = (-pitch, -roll, -yaw) rotasi kamera.
+
+Dari [Rotation matrix: In three dimensions](https://en.wikipedia.org/wiki/Rotation_matrix#Basic_rotations) maka bisa disimpulkan:
+
+<math xmlns="http://www.w3.org/1998/Math/MathML">
+<mrow class="MJX-TeXAtom-ORD">
+  <mstyle displaystyle="true">
+    <mtable columnalign="right left" rowspacing="0.9em 0.9em 0.3em" columnspacing="0em 0em">
+      <mtr>
+        <mtd>
+          <msub>
+            <mi>R</mi>
+            <mi>x</mi>
+          </msub>
+          <mo stretchy="false">(</mo>
+          <mi>α</mi>
+          <mo stretchy="false">)</mo>
+        </mtd>
+        <mtd>
+          <mo lspace="mediummathspace" form="infix">=</mo>
+          <mrow open="[" close="]">
+            <mo>[</mo>
+            <mtable rowspacing="4pt 0.7em 0.7em" columnspacing="1em">
+              <mtr>
+                <mtd>
+                  <mn>1</mn>
+                </mtd>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+              </mtr>
+              <mtr>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+                <mtd>
+                  <mi>cos</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>α</mi>
+                </mtd>
+                <mtd>
+                  <mo>−<!-- − --></mo>
+                  <mi>sin</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>α</mi>
+                </mtd>
+              </mtr>
+              <mtr>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+                <mtd>
+                  <mi>sin</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>α</mi>
+                </mtd>
+                <mtd>
+                  <mi>cos</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>α</mi>
+                </mtd>
+              </mtr>
+            </mtable>
+            <mo>]</mo>
+          </mrow>
+        </mtd>
+      </mtr>
+      <mtr>
+        <mtd>
+          <msub>
+            <mi>R</mi>
+            <mi>y</mi>
+          </msub>
+          <mo stretchy="false">(</mo>
+          <mi>β</mi>
+          <mo stretchy="false">)</mo>
+        </mtd>
+        <mtd>
+          <mo lspace="mediummathspace" form="infix">=</mo>
+          <mrow open="[" close="]">
+            <mo>[</mo>
+            <mtable rowspacing="0.7em 0.7em 0.4em" columnspacing="1em">
+              <mtr>
+                <mtd>
+                  <mi>cos</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>β</mi>
+                </mtd>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+                <mtd>
+                  <mi>sin</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>β</mi>
+                </mtd>
+              </mtr>
+              <mtr>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+                <mtd>
+                  <mn>1</mn>
+                </mtd>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+              </mtr>
+              <mtr>
+                <mtd>
+                  <mo>−<!-- − --></mo>
+                  <mi>sin</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>β</mi>
+                </mtd>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+                <mtd>
+                  <mi>cos</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>β</mi>
+                </mtd>
+              </mtr>
+            </mtable>
+            <mo>]</mo>
+          </mrow>
+        </mtd>
+      </mtr>
+      <mtr>
+        <mtd>
+          <msub>
+            <mi>R</mi>
+            <mi>z</mi>
+          </msub>
+          <mo stretchy="false">(</mo>
+          <mi>γ</mi>
+          <mo stretchy="false">)</mo>
+        </mtd>
+        <mtd>
+          <mo lspace="mediummathspace" form="infix">=</mo>
+          <mrow open="[" close="]">
+            <mo>[</mo>
+            <mtable rowspacing="0.7em 0.7em 0.4em" columnspacing="1em">
+              <mtr>
+                <mtd>
+                  <mi>cos</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>γ</mi>
+                </mtd>
+                <mtd>
+                  <mo>−<!-- − --></mo>
+                  <mi>sin</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>γ</mi>
+                </mtd>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+              </mtr>
+              <mtr>
+                <mtd>
+                  <mi>sin</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>γ</mi>
+                </mtd>
+                <mtd>
+                  <mi>cos</mi>
+                  <mo>a<!-- a --></mo>
+                  <mi>γ</mi>
+                </mtd>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+              </mtr>
+              <mtr>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+                <mtd>
+                  <mn>0</mn>
+                </mtd>
+                <mtd>
+                  <mn>1</mn>
+                </mtd>
+              </mtr>
+            </mtable>
+            <mo>]</mo>
+          </mrow>
+        </mtd>
+      </mtr>
+    </mtable>
+  </mstyle>
+</mrow>
+</math>
+
+Untuk menggabungkan RX, RY, dan RZ untuk proyeksi ada 2 kemungkinan, salah satunya pasti benar :P Untuk membuktikan, tinggal test pakai pitch dan yaw saja (jangan roll, biar gak pusing) plus translation.
+
+<math xmlns="http://www.w3.org/1998/Math/MathML">
+<mrow class="MJX-TeXAtom-ORD">
+  <mstyle displaystyle="true">
+    <mi>R</mi>
+    <mo>=</mo>
+    <msub>
+      <mi>R</mi>
+      <mi>z</mi>
+    </msub>
+    <mo stretchy="false">(</mo>
+    <mi>γ</mi>
+    <mo stretchy="false">)</mo>
+    <mspace width="thinmathspace"></mspace>
+    <msub>
+      <mi>R</mi>
+      <mi>y</mi>
+    </msub>
+    <mo stretchy="false">(</mo>
+    <mi>β<!-- β --></mi>
+    <mo stretchy="false">)</mo>
+    <mspace width="thinmathspace"></mspace>
+    <msub>
+      <mi>R</mi>
+      <mi>x</mi>
+    </msub>
+    <mo stretchy="false">(</mo>
+    <mi>α</mi>
+    <mo stretchy="false">)</mo>
+    <mspace width="thinmathspace"></mspace>
+    <mspace width="negativethinmathspace"></mspace>
+  </mstyle>
+</mrow>
+</math>
+
+atau:
+
+<math xmlns="http://www.w3.org/1998/Math/MathML">
+<mrow class="MJX-TeXAtom-ORD">
+  <mstyle displaystyle="true">
+    <mi>R</mi>
+    <mo>=</mo>
+    <msub>
+      <mi>R</mi>
+      <mi>x</mi>
+    </msub>
+    <mo stretchy="false">(</mo>
+    <mi>α<!-- α --></mi>
+    <mo stretchy="false">)</mo>
+    <mspace width="thinmathspace"></mspace>
+    <msub>
+      <mi>R</mi>
+      <mi>y</mi>
+    </msub>
+    <mo stretchy="false">(</mo>
+    <mi>β<!-- β --></mi>
+    <mo stretchy="false">)</mo>
+    <mspace width="thinmathspace"></mspace>
+    <msub>
+      <mi>R</mi>
+      <mi>z</mi>
+    </msub>
+    <mo stretchy="false">(</mo>
+    <mi>γ<!-- γ --></mi>
+    <mo stretchy="false">)</mo>
+    <mspace width="thinmathspace"></mspace>
+    <mspace width="negativethinmathspace"></mspace>
+  </mstyle>
+</mrow>
+</math>
 
 Dari [Rotation in 3D using OpenCV](http://jepsonsblog.blogspot.com/2012/11/rotation-in-3d-using-opencvs.html):
 
