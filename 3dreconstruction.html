@@ -130,13 +130,14 @@ CM</code></pre>
 ## [2,]   0.0000 -207.2289  120
 ## [3,]   0.0000    0.0000    1</code></pre>
 <p>Kalau udah punya CM maka perlu bikin joint rotation-translation matrix. Ini Hendy agak bingung jadi biarin Sigit aja yang pusing :p</p>
-<pre class="r"><code>theta &lt;- 0*pi
+<pre class="r"><code>theta &lt;- 0*pi # harusnya ini gamma, lihat penjelasan di bawah tentang rotasi 3D
 t &lt;- c(0, 0, 0)
 names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
 t</code></pre>
 <pre><code>## x y z 
 ## 0 0 0</code></pre>
-<pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
+<pre class="r"><code># rotasi ini sebenarnya masih RZ, belum R
+Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
                sin(theta),  cos(theta), 0, t[&#39;y&#39;],
                0,           0,          1, t[&#39;z&#39;]),
              ncol=4, byrow=TRUE)
@@ -668,6 +669,51 @@ person.height</code></pre>
 <pre class="r"><code>xyz &lt;- solve(qr(CMRt), uv)</code></pre>
 <p>di C++ jadi:</p>
 <pre><code>bool success = solve(CMRt, uv, xyz, DECOMP_QR);</code></pre>
+</div>
+<div id="pembuktian-model-dari-realita-samsung-galaxy-s4" class="section level2">
+<h2>Pembuktian Model dari Realita Samsung Galaxy S4</h2>
+<p>Di kantor Bippo:</p>
+<ul>
+<li>ukuran ruangan: dz = (11.66667 + 6.9) * 0.3 = 5.57 m, dengan range: -2…+3.57 dx = 12 * 0.3 = 3.6 m, dengan range: -1.4 .. +2.2</li>
+<li>Jarak kamera ke tembok (z) = 11.6667 ubin = 11.6667 * 0.3 = 3.5 m</li>
+<li>y kamera = 0.6m. Posisi kamera (0, 0.6, 0).</li>
+<li>y lantai = 0m</li>
+<li>tinggi objek (ubin) = 0.3m</li>
+<li>lebar objek (ubin) = 0.3m</li>
+<li>rotasi terhadap horizon = awalnya 0 semua, tapi akan di</li>
+<li>posisi objek:
+<ol style="list-style-type: decimal">
+<li>11 petak dari kamera (0, 0, 3.3)</li>
+<li>10 petak dari kamera (0, 0, 3.0)</li>
+<li>9 petak dari kamera (0, 0, 2.7)</li>
+<li>8 petak dari kamera (0, 0, 2.4)</li>
+<li>7 petak dari kamera (0, 0, 2.1)</li>
+<li>6 petak dari kamera (0, 0, 1.8)</li>
+<li>5 petak dari kamera (0, 0, 1.5)</li>
+</ol></li>
+</ul>
+</div>
+<div id="rotasi-3d" class="section level2">
+<h2>Rotasi 3D</h2>
+<p>Dari <a href="http://jepsonsblog.blogspot.com/2012/11/rotation-in-3d-using-opencvs.html">Rotation in 3D using OpenCV</a>:</p>
+<pre><code>// Rotation matrices around the X, Y, and Z axis
+Mat RX = (Mat_&lt;double&gt;(4, 4) &lt;&lt;
+          1,          0,           0, 0,
+          0, cos(alpha), -sin(alpha), 0,
+          0, sin(alpha),  cos(alpha), 0,
+          0,          0,           0, 1);
+Mat RY = (Mat_&lt;double&gt;(4, 4) &lt;&lt;
+          cos(beta), 0, -sin(beta), 0,
+          0, 1,          0, 0,
+          sin(beta), 0,  cos(beta), 0,
+          0, 0,          0, 1);
+Mat RZ = (Mat_&lt;double&gt;(4, 4) &lt;&lt;
+          cos(gamma), -sin(gamma), 0, 0,
+          sin(gamma),  cos(gamma), 0, 0,
+          0,          0,           1, 0,
+          0,          0,           0, 1);
+// Composed rotation matrix with (RX, RY, RZ)
+Mat R = RX * RY * RZ;</code></pre>
 </div>
 
 

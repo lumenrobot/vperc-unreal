@@ -79,10 +79,11 @@ CM
 Kalau udah punya CM maka perlu bikin joint rotation-translation matrix. Ini Hendy agak bingung jadi biarin Sigit aja yang pusing :p
 
 ```{r}
-theta <- 0*pi
+theta <- 0*pi # harusnya ini gamma, lihat penjelasan di bawah tentang rotasi 3D
 t <- c(0, 0, 0)
 names(t) <- c('x', 'y', 'z')
 t
+# rotasi ini sebenarnya masih RZ, belum R
 Rt <- matrix(c(cos(theta), -sin(theta), 0, t['x'],
                sin(theta),  cos(theta), 0, t['y'],
                0,           0,          1, t['z']),
@@ -428,4 +429,51 @@ di C++ jadi:
 
 ```
 bool success = solve(CMRt, uv, xyz, DECOMP_QR);
+```
+
+## Pembuktian Model dari Realita Samsung Galaxy S4
+
+Di kantor Bippo:
+
+* ukuran ruangan:
+  dz = (11.66667 + 6.9) * 0.3 = 5.57 m, dengan range: -2...+3.57
+  dx = 12 * 0.3 = 3.6 m, dengan range: -1.4 .. +2.2
+* Jarak kamera ke tembok (z) = 11.6667 ubin = 11.6667 * 0.3 = 3.5 m
+* y kamera = 0.6m. Posisi kamera (0, 0.6, 0).
+* y lantai = 0m
+* tinggi objek (ubin) = 0.3m
+* lebar objek (ubin)  = 0.3m
+* rotasi terhadap horizon = awalnya 0 semua, tapi akan di
+* posisi objek:
+    1. 11 petak dari kamera (0, 0, 3.3)
+    2. 10 petak dari kamera (0, 0, 3.0)
+    3.  9 petak dari kamera (0, 0, 2.7)
+    4.  8 petak dari kamera (0, 0, 2.4)
+    5.  7 petak dari kamera (0, 0, 2.1)
+    6.  6 petak dari kamera (0, 0, 1.8)
+    7.  5 petak dari kamera (0, 0, 1.5)
+
+## Rotasi 3D
+
+Dari [Rotation in 3D using OpenCV](http://jepsonsblog.blogspot.com/2012/11/rotation-in-3d-using-opencvs.html):
+
+```
+// Rotation matrices around the X, Y, and Z axis
+Mat RX = (Mat_<double>(4, 4) <<
+          1,          0,           0, 0,
+          0, cos(alpha), -sin(alpha), 0,
+          0, sin(alpha),  cos(alpha), 0,
+          0,          0,           0, 1);
+Mat RY = (Mat_<double>(4, 4) <<
+          cos(beta), 0, -sin(beta), 0,
+          0, 1,          0, 0,
+          sin(beta), 0,  cos(beta), 0,
+          0, 0,          0, 1);
+Mat RZ = (Mat_<double>(4, 4) <<
+          cos(gamma), -sin(gamma), 0, 0,
+          sin(gamma),  cos(gamma), 0, 0,
+          0,          0,           1, 0,
+          0,          0,           0, 1);
+// Composed rotation matrix with (RX, RY, RZ)
+Mat R = RX * RY * RZ;
 ```
