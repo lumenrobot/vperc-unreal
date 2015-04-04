@@ -316,121 +316,122 @@ df</code></pre>
 <p><img src="3dreconstruction_files/figure-html/unnamed-chunk-8-1.png" title="" alt="" width="672" /></p>
 <div id="memplot-lantai" class="section level2">
 <h2>Memplot ‘lantai’</h2>
-<pre class="r"><code># create 100 lattice points (10x10) spanning from X=-2..+2 and Z =0..4, Y constant = -1
+<pre class="r"><code># create 100 lattice points (10x10) spanning from X=-2..+2 and Z =0..10, Y constant = -1
 XYZ &lt;- matrix(nrow = 100, ncol=4)
 colnames(XYZ) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;, &#39;dummy&#39;)
 for (i in 0:9) {
   for (j in 0:9) {
     x &lt;- -2 + i*0.4
     y &lt;- -1
-    z &lt;- 0 + j*0.4
+    z &lt;- 0 + j*1
     XYZ[i * 10 + j + 1,] &lt;- c(x, y, z, 1)
   }
 }
 XYZ</code></pre>
-<pre><code>##           x  y   z dummy
-##   [1,] -2.0 -1 0.0     1
-##   [2,] -2.0 -1 0.4     1
-##   [3,] -2.0 -1 0.8     1
-##   [4,] -2.0 -1 1.2     1
-##   [5,] -2.0 -1 1.6     1
-##   [6,] -2.0 -1 2.0     1
-##   [7,] -2.0 -1 2.4     1
-##   [8,] -2.0 -1 2.8     1
-##   [9,] -2.0 -1 3.2     1
-##  [10,] -2.0 -1 3.6     1
-##  [11,] -1.6 -1 0.0     1
-##  [12,] -1.6 -1 0.4     1
-##  [13,] -1.6 -1 0.8     1
-##  [14,] -1.6 -1 1.2     1
-##  [15,] -1.6 -1 1.6     1
-##  [16,] -1.6 -1 2.0     1
-##  [17,] -1.6 -1 2.4     1
-##  [18,] -1.6 -1 2.8     1
-##  [19,] -1.6 -1 3.2     1
-##  [20,] -1.6 -1 3.6     1
-##  [21,] -1.2 -1 0.0     1
-##  [22,] -1.2 -1 0.4     1
-##  [23,] -1.2 -1 0.8     1
-##  [24,] -1.2 -1 1.2     1
-##  [25,] -1.2 -1 1.6     1
-##  [26,] -1.2 -1 2.0     1
-##  [27,] -1.2 -1 2.4     1
-##  [28,] -1.2 -1 2.8     1
-##  [29,] -1.2 -1 3.2     1
-##  [30,] -1.2 -1 3.6     1
-##  [31,] -0.8 -1 0.0     1
-##  [32,] -0.8 -1 0.4     1
-##  [33,] -0.8 -1 0.8     1
-##  [34,] -0.8 -1 1.2     1
-##  [35,] -0.8 -1 1.6     1
-##  [36,] -0.8 -1 2.0     1
-##  [37,] -0.8 -1 2.4     1
-##  [38,] -0.8 -1 2.8     1
-##  [39,] -0.8 -1 3.2     1
-##  [40,] -0.8 -1 3.6     1
-##  [41,] -0.4 -1 0.0     1
-##  [42,] -0.4 -1 0.4     1
-##  [43,] -0.4 -1 0.8     1
-##  [44,] -0.4 -1 1.2     1
-##  [45,] -0.4 -1 1.6     1
-##  [46,] -0.4 -1 2.0     1
-##  [47,] -0.4 -1 2.4     1
-##  [48,] -0.4 -1 2.8     1
-##  [49,] -0.4 -1 3.2     1
-##  [50,] -0.4 -1 3.6     1
-##  [51,]  0.0 -1 0.0     1
-##  [52,]  0.0 -1 0.4     1
-##  [53,]  0.0 -1 0.8     1
-##  [54,]  0.0 -1 1.2     1
-##  [55,]  0.0 -1 1.6     1
-##  [56,]  0.0 -1 2.0     1
-##  [57,]  0.0 -1 2.4     1
-##  [58,]  0.0 -1 2.8     1
-##  [59,]  0.0 -1 3.2     1
-##  [60,]  0.0 -1 3.6     1
-##  [61,]  0.4 -1 0.0     1
-##  [62,]  0.4 -1 0.4     1
-##  [63,]  0.4 -1 0.8     1
-##  [64,]  0.4 -1 1.2     1
-##  [65,]  0.4 -1 1.6     1
-##  [66,]  0.4 -1 2.0     1
-##  [67,]  0.4 -1 2.4     1
-##  [68,]  0.4 -1 2.8     1
-##  [69,]  0.4 -1 3.2     1
-##  [70,]  0.4 -1 3.6     1
-##  [71,]  0.8 -1 0.0     1
-##  [72,]  0.8 -1 0.4     1
-##  [73,]  0.8 -1 0.8     1
-##  [74,]  0.8 -1 1.2     1
-##  [75,]  0.8 -1 1.6     1
-##  [76,]  0.8 -1 2.0     1
-##  [77,]  0.8 -1 2.4     1
-##  [78,]  0.8 -1 2.8     1
-##  [79,]  0.8 -1 3.2     1
-##  [80,]  0.8 -1 3.6     1
-##  [81,]  1.2 -1 0.0     1
-##  [82,]  1.2 -1 0.4     1
-##  [83,]  1.2 -1 0.8     1
-##  [84,]  1.2 -1 1.2     1
-##  [85,]  1.2 -1 1.6     1
-##  [86,]  1.2 -1 2.0     1
-##  [87,]  1.2 -1 2.4     1
-##  [88,]  1.2 -1 2.8     1
-##  [89,]  1.2 -1 3.2     1
-##  [90,]  1.2 -1 3.6     1
-##  [91,]  1.6 -1 0.0     1
-##  [92,]  1.6 -1 0.4     1
-##  [93,]  1.6 -1 0.8     1
-##  [94,]  1.6 -1 1.2     1
-##  [95,]  1.6 -1 1.6     1
-##  [96,]  1.6 -1 2.0     1
-##  [97,]  1.6 -1 2.4     1
-##  [98,]  1.6 -1 2.8     1
-##  [99,]  1.6 -1 3.2     1
-## [100,]  1.6 -1 3.6     1</code></pre>
+<pre><code>##           x  y z dummy
+##   [1,] -2.0 -1 0     1
+##   [2,] -2.0 -1 1     1
+##   [3,] -2.0 -1 2     1
+##   [4,] -2.0 -1 3     1
+##   [5,] -2.0 -1 4     1
+##   [6,] -2.0 -1 5     1
+##   [7,] -2.0 -1 6     1
+##   [8,] -2.0 -1 7     1
+##   [9,] -2.0 -1 8     1
+##  [10,] -2.0 -1 9     1
+##  [11,] -1.6 -1 0     1
+##  [12,] -1.6 -1 1     1
+##  [13,] -1.6 -1 2     1
+##  [14,] -1.6 -1 3     1
+##  [15,] -1.6 -1 4     1
+##  [16,] -1.6 -1 5     1
+##  [17,] -1.6 -1 6     1
+##  [18,] -1.6 -1 7     1
+##  [19,] -1.6 -1 8     1
+##  [20,] -1.6 -1 9     1
+##  [21,] -1.2 -1 0     1
+##  [22,] -1.2 -1 1     1
+##  [23,] -1.2 -1 2     1
+##  [24,] -1.2 -1 3     1
+##  [25,] -1.2 -1 4     1
+##  [26,] -1.2 -1 5     1
+##  [27,] -1.2 -1 6     1
+##  [28,] -1.2 -1 7     1
+##  [29,] -1.2 -1 8     1
+##  [30,] -1.2 -1 9     1
+##  [31,] -0.8 -1 0     1
+##  [32,] -0.8 -1 1     1
+##  [33,] -0.8 -1 2     1
+##  [34,] -0.8 -1 3     1
+##  [35,] -0.8 -1 4     1
+##  [36,] -0.8 -1 5     1
+##  [37,] -0.8 -1 6     1
+##  [38,] -0.8 -1 7     1
+##  [39,] -0.8 -1 8     1
+##  [40,] -0.8 -1 9     1
+##  [41,] -0.4 -1 0     1
+##  [42,] -0.4 -1 1     1
+##  [43,] -0.4 -1 2     1
+##  [44,] -0.4 -1 3     1
+##  [45,] -0.4 -1 4     1
+##  [46,] -0.4 -1 5     1
+##  [47,] -0.4 -1 6     1
+##  [48,] -0.4 -1 7     1
+##  [49,] -0.4 -1 8     1
+##  [50,] -0.4 -1 9     1
+##  [51,]  0.0 -1 0     1
+##  [52,]  0.0 -1 1     1
+##  [53,]  0.0 -1 2     1
+##  [54,]  0.0 -1 3     1
+##  [55,]  0.0 -1 4     1
+##  [56,]  0.0 -1 5     1
+##  [57,]  0.0 -1 6     1
+##  [58,]  0.0 -1 7     1
+##  [59,]  0.0 -1 8     1
+##  [60,]  0.0 -1 9     1
+##  [61,]  0.4 -1 0     1
+##  [62,]  0.4 -1 1     1
+##  [63,]  0.4 -1 2     1
+##  [64,]  0.4 -1 3     1
+##  [65,]  0.4 -1 4     1
+##  [66,]  0.4 -1 5     1
+##  [67,]  0.4 -1 6     1
+##  [68,]  0.4 -1 7     1
+##  [69,]  0.4 -1 8     1
+##  [70,]  0.4 -1 9     1
+##  [71,]  0.8 -1 0     1
+##  [72,]  0.8 -1 1     1
+##  [73,]  0.8 -1 2     1
+##  [74,]  0.8 -1 3     1
+##  [75,]  0.8 -1 4     1
+##  [76,]  0.8 -1 5     1
+##  [77,]  0.8 -1 6     1
+##  [78,]  0.8 -1 7     1
+##  [79,]  0.8 -1 8     1
+##  [80,]  0.8 -1 9     1
+##  [81,]  1.2 -1 0     1
+##  [82,]  1.2 -1 1     1
+##  [83,]  1.2 -1 2     1
+##  [84,]  1.2 -1 3     1
+##  [85,]  1.2 -1 4     1
+##  [86,]  1.2 -1 5     1
+##  [87,]  1.2 -1 6     1
+##  [88,]  1.2 -1 7     1
+##  [89,]  1.2 -1 8     1
+##  [90,]  1.2 -1 9     1
+##  [91,]  1.6 -1 0     1
+##  [92,]  1.6 -1 1     1
+##  [93,]  1.6 -1 2     1
+##  [94,]  1.6 -1 3     1
+##  [95,]  1.6 -1 4     1
+##  [96,]  1.6 -1 5     1
+##  [97,]  1.6 -1 6     1
+##  [98,]  1.6 -1 7     1
+##  [99,]  1.6 -1 8     1
+## [100,]  1.6 -1 9     1</code></pre>
 <p>Bila ty = 0:</p>
-<pre class="r"><code>t &lt;- c(0, 0, 0)
+<pre class="r"><code>theta &lt;- 0*pi
+t &lt;- c(0, 0, 0)
 names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
 t</code></pre>
 <pre><code>## x y z 
@@ -461,11 +462,49 @@ df &lt;- data.frame(UV)
 #df
 ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
   geom_point(aes(color=s)) +
-  scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
-  scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
+  scale_y_reverse(limits=c(360, 0), breaks=c(0, 120, 240)) + 
+  scale_x_continuous(limits=c(0, 480), breaks=c(0, 160, 320)) +
   ggtitle(&#39;2Dimage range is (0,0)..(320,240)&#39;)</code></pre>
-<pre><code>## Warning: Removed 18 rows containing missing values (geom_point).</code></pre>
+<pre><code>## Warning: Removed 8 rows containing missing values (geom_point).</code></pre>
 <p><img src="3dreconstruction_files/figure-html/unnamed-chunk-10-1.png" title="" alt="" width="672" /></p>
+<p>Bila theta = pi/11: (terhadap sumbu z[depan-belakang])</p>
+<pre class="r"><code>theta &lt;- pi/11
+t &lt;- c(0, 0, 0)
+names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
+t</code></pre>
+<pre><code>## x y z 
+## 0 0 0</code></pre>
+<pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
+               sin(theta),  cos(theta), 0, t[&#39;y&#39;],
+               0,           0,          1, t[&#39;z&#39;]),
+             ncol=4, byrow=TRUE)
+Rt</code></pre>
+<pre><code>##           [,1]       [,2] [,3] [,4]
+## [1,] 0.9594930 -0.2817326    0    0
+## [2,] 0.2817326  0.9594930    0    0
+## [3,] 0.0000000  0.0000000    1    0</code></pre>
+<pre class="r"><code># ramean
+sUV &lt;- t(CM %*% Rt %*% t(XYZ))
+colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
+#sUV
+UV &lt;- matrix(ncol = 3, nrow = nrow(sUV))
+colnames(UV) &lt;- c(&#39;u&#39;, &#39;v&#39;, &#39;s&#39;)
+UV[,&#39;u&#39;] &lt;- sUV[,&#39;su&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;v&#39;] &lt;- sUV[,&#39;sv&#39;] / sUV[,&#39;s&#39;]
+UV[,&#39;s&#39;] &lt;- sUV[,&#39;s&#39;]
+#UV
+
+# plot
+library(ggplot2)
+df &lt;- data.frame(UV)
+#df
+ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
+  geom_point(aes(color=s)) +
+  scale_y_reverse(limits=c(360, 0), breaks=c(0, 120, 240)) + 
+  scale_x_continuous(limits=c(0, 480), breaks=c(0, 160, 320)) +
+  ggtitle(&#39;2Dimage range is (0,0)..(320,240)&#39;)</code></pre>
+<pre><code>## Warning: Removed 6 rows containing missing values (geom_point).</code></pre>
+<p><img src="3dreconstruction_files/figure-html/unnamed-chunk-11-1.png" title="" alt="" width="672" /></p>
 <p>Bila ty = -1: (kamera agak ke atas)</p>
 <pre class="r"><code>t &lt;- c(0, -1, 0)
 names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
@@ -477,10 +516,10 @@ t</code></pre>
                0,           0,          1, t[&#39;z&#39;]),
              ncol=4, byrow=TRUE)
 Rt</code></pre>
-<pre><code>##      [,1] [,2] [,3] [,4]
-## [1,]    1    0    0    0
-## [2,]    0    1    0   -1
-## [3,]    0    0    1    0</code></pre>
+<pre><code>##           [,1]       [,2] [,3] [,4]
+## [1,] 0.9594930 -0.2817326    0    0
+## [2,] 0.2817326  0.9594930    0   -1
+## [3,] 0.0000000  0.0000000    1    0</code></pre>
 <pre class="r"><code># ramean
 sUV &lt;- t(CM %*% Rt %*% t(XYZ))
 colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
@@ -501,8 +540,8 @@ ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
   scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
   scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
   ggtitle(&#39;2Dimage range is (0,0)..(320,240)&#39;)</code></pre>
-<pre><code>## Warning: Removed 23 rows containing missing values (geom_point).</code></pre>
-<p><img src="3dreconstruction_files/figure-html/unnamed-chunk-11-1.png" title="" alt="" width="672" /></p>
+<pre><code>## Warning: Removed 4 rows containing missing values (geom_point).</code></pre>
+<p><img src="3dreconstruction_files/figure-html/unnamed-chunk-12-1.png" title="" alt="" width="672" /></p>
 <p>Bila ty = +2: (kamera di bawah lantai)</p>
 <pre class="r"><code>t &lt;- c(0, +2, 0)
 names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
@@ -514,10 +553,10 @@ t</code></pre>
                0,           0,          1, t[&#39;z&#39;]),
              ncol=4, byrow=TRUE)
 Rt</code></pre>
-<pre><code>##      [,1] [,2] [,3] [,4]
-## [1,]    1    0    0    0
-## [2,]    0    1    0    2
-## [3,]    0    0    1    0</code></pre>
+<pre><code>##           [,1]       [,2] [,3] [,4]
+## [1,] 0.9594930 -0.2817326    0    0
+## [2,] 0.2817326  0.9594930    0    2
+## [3,] 0.0000000  0.0000000    1    0</code></pre>
 <pre class="r"><code># ramean
 sUV &lt;- t(CM %*% Rt %*% t(XYZ))
 colnames(sUV) &lt;- c(&#39;su&#39;, &#39;sv&#39;, &#39;s&#39;)
@@ -538,8 +577,97 @@ ggplot(df, aes(x=u, y=v)) + #geom_point(color=rownames(df)) +
   scale_y_reverse(limits=c(700, 0), breaks=c(0, 120, 240)) + 
   scale_x_continuous(limits=c(0, 1100), breaks=c(0, 160, 320)) +
   ggtitle(&#39;2Dimage range is (0,0)..(320,240)&#39;)</code></pre>
-<pre><code>## Warning: Removed 44 rows containing missing values (geom_point).</code></pre>
-<p><img src="3dreconstruction_files/figure-html/unnamed-chunk-12-1.png" title="" alt="" width="672" /></p>
+<pre><code>## Warning: Removed 14 rows containing missing values (geom_point).</code></pre>
+<p><img src="3dreconstruction_files/figure-html/unnamed-chunk-13-1.png" title="" alt="" width="672" /></p>
+</div>
+<div id="d-reconstruction-from-2d" class="section level2">
+<h2>3D Reconstruction from 2D</h2>
+<p>First, we multiply the CM with Rt:</p>
+<pre class="r"><code>theta &lt;- 0*pi
+t &lt;- c(0, 0, 0)
+names(t) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
+t</code></pre>
+<pre><code>## x y z 
+## 0 0 0</code></pre>
+<pre class="r"><code>Rt &lt;- matrix(c(cos(theta), -sin(theta), 0, t[&#39;x&#39;],
+               sin(theta),  cos(theta), 0, t[&#39;y&#39;],
+               0,           0,          1, t[&#39;z&#39;]),
+             ncol=4, byrow=TRUE)
+Rt</code></pre>
+<pre><code>##      [,1] [,2] [,3] [,4]
+## [1,]    1    0    0    0
+## [2,]    0    1    0    0
+## [3,]    0    0    1    0</code></pre>
+<pre class="r"><code>CMRt &lt;- CM %*% Rt
+CMRt</code></pre>
+<pre><code>##          [,1]      [,2] [,3] [,4]
+## [1,] 207.2289    0.0000  160    0
+## [2,]   0.0000 -207.2289  120    0
+## [3,]   0.0000    0.0000    1    0</code></pre>
+<p>Bila diketahui: u, v, dan y dari object, maka:</p>
+<pre class="r"><code># xyz yang diinginkan: c(0.8, -1.0, 6.0)
+# uv(s) adalah: c(187.6305 154.5382) -&gt; kalau di imagespace, cuma c(188, 154, dummy=1) dan agak nggak akurat
+# y adalah: -1
+# dy (y object/lantai dikurangi y camera) = 0 - 1 = -1
+# s = dy / (y hasil solve)
+yObject &lt;- 0 # lantai Lumen: y == 0
+yCamera &lt;- 1 # camera 1 meter di atas lantai
+dy &lt;- yObject - yCamera
+uv &lt;- c(188, 154, 1)
+xyz &lt;- solve(qr(CMRt), uv)
+names(xyz) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
+xyz</code></pre>
+<pre><code>##          x          y          z       &lt;NA&gt; 
+##  0.1351163 -0.1640698  1.0000000  0.0000000</code></pre>
+<pre class="r"><code># s = dy / (y hasil solve)
+s &lt;- dy / xyz[&#39;y&#39;]
+s</code></pre>
+<pre><code>##        y 
+## 6.094968</code></pre>
+<pre class="r"><code># kalikan hasil solve dengan s, maka didapatkan xyz sebenarnya
+# yaitu: c(0.8, -1.0, 6.0) +- galat
+xyz &lt;- xyz * s
+xyz</code></pre>
+<pre><code>##          x          y          z       &lt;NA&gt; 
+##  0.8235294 -1.0000000  6.0949681  0.0000000</code></pre>
+<p>Terus kita ingin mengetahui tinggi dari objek tersebut, bila diketahui x,y,z,u,v dari kaki, lalu v dari ujung kepala.</p>
+<pre class="r"><code>uv.head = c(188, 140, 1) # tingginya 14 pixel di camera
+xyz.head &lt;- solve(qr(CMRt), uv.head)
+names(xyz.head) &lt;- c(&#39;x&#39;, &#39;y&#39;, &#39;z&#39;)
+xyz.head</code></pre>
+<pre><code>##           x           y           z        &lt;NA&gt; 
+##  0.13511628 -0.09651163  1.00000000  0.00000000</code></pre>
+<pre class="r"><code># s sudah didapatkan di atas
+# kalikan hasil solve dengan s, maka didapatkan xyz sebenarnya
+# di mana bs dipastikan bahwa x.head == x.foot, z.head==z.foot
+# kalau misalnya ga sama, berarti s-nya salah
+# cuma belum dicoba kalau kameranya berotasi...
+xyz.head &lt;- xyz.head * s
+xyz.head</code></pre>
+<pre><code>##          x          y          z       &lt;NA&gt; 
+##  0.8235294 -0.5882353  6.0949681  0.0000000</code></pre>
+<pre class="r"><code>c(xyz.head[&#39;x&#39;] == xyz[&#39;x&#39;], xyz.head[&#39;z&#39;] == xyz[&#39;z&#39;])</code></pre>
+<pre><code>##    x    z 
+## TRUE TRUE</code></pre>
+<pre class="r"><code># tinggi orang adalah xyz.head[y] - xyz.foot[y]
+person.height &lt;- xyz.head[&#39;y&#39;] - xyz[&#39;y&#39;]
+person.height</code></pre>
+<pre><code>##         y 
+## 0.4117647</code></pre>
+<p>dan dengan yang cara yang sama, harusnya ini juga bisa digunakan untuk mengetahui lebar (kiri..kanan) dari objek / batas koordinat menurut sumbu x.</p>
+</div>
+<div id="implementasi-di-c" class="section level2">
+<h2>Implementasi di C++</h2>
+<p>Selain fungsi dasar <a href="http://docs.opencv.org/modules/core/doc/basic_structures.html#matrix-expressions">matrix multiplication di OpenCV</a>, yang dibutuhkan adalah:</p>
+<ol style="list-style-type: decimal">
+<li><code>qr</code>: QR Decomposition of Matrix.</li>
+<li><code>solve</code>: Solve a System of Equations</li>
+</ol>
+<p>Ternyata sudah ada, yaitu <a href="http://docs.opencv.org/modules/core/doc/operations_on_arrays.html?highlight=solve#bool%20solve(InputArray%20src1,%20InputArray%20src2,%20OutputArray%20dst,%20int%20flags)">bool solve(InputArray src1, InputArray src2, OutputArray dst, int flags=DECOMP_LU)¶</a></p>
+<p>jadi kalo di R:</p>
+<pre class="r"><code>xyz &lt;- solve(qr(CMRt), uv)</code></pre>
+<p>di C++ jadi:</p>
+<pre><code>bool success = solve(CMRt, uv, xyz, DECOMP_QR);</code></pre>
 </div>
 
 
