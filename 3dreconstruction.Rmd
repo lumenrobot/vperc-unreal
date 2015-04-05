@@ -7,35 +7,9 @@ output:
     self_contained: no
 ---
 
-## Metrics Units/Scale and 3D Coordinate Systems
+## Units & Coordinate System
 
-Unreal Units (UU) are 1 cm, 0.01 of Blender/SecondLife. +x forward, +y right, +z up.
-
-Unity Units are by default 1 m, terbukti dari setting gravity default 9.81 (m/s) yang sesuai reality, tapi memang Unity lebih lax dalam urusan unit.
-x+ right, y+ up, z+ away.
-
-Blender Units (BU) are usually 1 m. See [Static Mesh from Blender](https://wiki.unrealengine.com/Static_Mesh_from_Blender).
-Left handed: +x is to right, +y away, +z up. 
-
-* Dari Blender, pas export FBX, gunakan export scale 1 aja, jadi unit si model tetap meter.
-* Di Unreal, pas import FBX, gunakan import scale 0.01. Dari meter menjadi cm.
-* Di Unity, pas import FBX, gunakan import scale 1. Dari meter tetap meter.
-
-[Second Life / OpenSimulator](http://wiki.secondlife.com/wiki/Coordinate) uses meters.
-A sim is 256×256 (x×y) meters. x is longitude (from west to east, the wiki is partially incorrect, but the examples are good and are [verified here](http://xahsl.org/sl/build_pos.html)), y is latitude (from south to north).
-z is altitude where 0 is lowest possible point.
-When someone is facing north, this is exactly same as Blender.
-
-Dalam sistem Lumen yang dipakai sebagai standar adalah sistem Second Life. Jadi pada saat image recognition/tracking, semua koordinatnya menggunakan aturan Second Life.
-
-* Dari koordinat Lumen ke Unreal, pada saat visualisasi Unreal, maka swap x dan y lalu koordinatnya akan discale menjadi Unreal Units (×0.01). Sebaliknya dari Unreal ke Lumen, koordinatenya discale menjadi SecondLife/Blender units (×100) lalu swap x dan y.
-* Dari koordinat Lumen ke Unity, pada saat visualisasi Unity, maka koordinatnya akan di-rotate 90degrees for X (pitch) sehingga y+ up dan z+ away. Sebaliknya dari Unity ke Lumen, koordinatenya dirotate -90degrees for X (pitch) menjadi SecondLife/Blender coordinates (y+ away, +z up).
-
-Untuk rotasi 3D, menggunakan style Blender/SecondLife. See also: [rotation Unreal](https://docs.unrealengine.com/latest/INT/API/Runtime/Core/Math/FRotator/index.html). Unit sudut adalah degrees, karena sudut degrees juga dipakai oleh Unreal/Unity/Blender. Pas kalkulasi internal baru diubah ke radian. Nama sudutnya buka alpha, beta, gamma tapi yang lebih deskriptif yaitu pitch (tengadah), roll (geleng clockwise), yaw (menoleh ke kiri):
-
-* Pitch (RX):  Looking up and down (0=Straight Ahead, +Up, -Down).
-* Roll (RY): Rotation about axis of screen, 0=Straight, +Clockwise, -CCW.
-* Yaw (RZ):	Rotating around (running in circles), 0=North, +West, -East. Kalo di Unreal: 0=East, +North, -South.
+Lihat: [Lumen Units and 2D/3D Coordinate System](coordinates.html)
 
 ## 3D Reconstruction
 

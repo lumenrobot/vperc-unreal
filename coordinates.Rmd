@@ -1,0 +1,141 @@
+---
+title: "Lumen 2D/3D Coordinate System"
+author: "Sigit Ari Wijanarko, Hendy Irawan"
+date: "April 05, 2015"
+output:
+  html_document:
+    self_contained: no
+---
+
+## Metrics Units/Scale and 3D Coordinate Systems
+
+Unreal Units (UU) are 1 cm, 0.01 of Blender/SecondLife. Left handed, +x forward, +y right, +z up.
+
+Unity Units are by default 1 m, terbukti dari setting gravity default 9.81 (m/s) yang sesuai reality, tapi memang Unity lebih lax dalam urusan unit.
+Left handed, x+ right, y+ up, z+ forward.
+
+Blender Units (BU) are usually 1 m. See [Static Mesh from Blender](https://wiki.unrealengine.com/Static_Mesh_from_Blender).
+Right handed but +z up: +x is to left, +y incoming, +z up. From Blender to X3D: rotate +90deg (CCW) on z axis. From X3D to Blender: rotate -90 (CW) on z axis.
+
+* Dari Blender, pas export FBX, gunakan export scale 1 aja, jadi unit si model tetap meter.
+* Di Unreal, pas import FBX, gunakan import scale 0.01. Dari meter menjadi cm.
+* Di Unity, pas import FBX, gunakan import scale 1. Dari meter tetap meter.
+
+[Second Life / OpenSimulator](http://wiki.secondlife.com/wiki/Coordinate) uses meters.
+A sim is 256×256 (x×y) meters. x is longitude (from west to east, the wiki is partially incorrect, but the examples are good and are [verified here](http://xahsl.org/sl/build_pos.html)), y is latitude (from south to north).
+z is altitude where 0 is lowest possible point.
+When someone is facing north, this is exactly same as Blender.
+
+[OSM-3D.org](http://osm-3d.org)
+
+See: 
+
+* [3D Geodata Infrastructure (GDI-3D)](http://koenigstuhl.geog.uni-heidelberg.de/gdi-3d/), this hosts:
+    * [OpenStreetMap-3D](http://www.OSM-3D.org): Combining free and user generated data from OpenStreetMap with SRTM DEM - currently for entire Germany.
+    * [NorthRhine-Westphalia-3D](http://www.nrw-3d.de): All - over 6 Million - LOD1 buildings from GeoBasis.NRW in GDI-3D
+    * [Heidelberg-3D](http://www.heidelberg-3d.de):  Official data combined with textured high resolution building models of Heidelberg
+* [Web 3D Service (W3DS)](http://www.w3ds.org/doku.php), related to and mentions CityGML in the spec, menggunakan X3D spec juga.
+* [Web3D Consortium / X3D](http://www.web3d.org/) used by NASA, DoD, Intel, IBM, National Institute of Health, Toshiba... curiously Google is missing? ISO/IEC standards:
+    * [ISO/IEC 18026:2009(E) Spatial Reference Model (SRM)](http://standards.sedris.org/18026_Ed2/ISO_IEC_18026_Ed2/ISO_IEC_18026_NOTES.html)
+    * ISO/IEC 18026:201x, Information technology — Spatial Reference Model (SRM) (to be published)
+    * ISO/IEC 19775-2, Information technology — Computer graphics, image processing and environmental data representation — Extensible 3D (X3D) — Part 2: Scene access interface (SAI)
+    * ISO/IEC 19776, Information technology — Computer graphics, image processing and environmental data representation — Extensible 3D (X3D) encodings
+* [CityGML](http://www.citygml.org/)
+* [OSM2World](http://wiki.openstreetmap.org/wiki/OSM2World), bisa tagging ada pintu, kursi, dll.
+* [X3DOM](http://www.x3dom.org/)
+
+[X3D Geometry3D](http://www.web3d.org/documents/specifications/19775-1/V3.3/Part01/components/geometry3D.html): facing north, means +x right, +y up, +z incoming. Same as OpenGL.
+
+![right hand rule axes](RightHandRuleAxes.png)
+
+From [X3D Concepts](http://www.web3d.org/documents/specifications/19775-1/V3.3/Part01/concepts.html): ISO/IEC 19775 uses a Cartesian, right-handed, three-dimensional coordinate system. By default, the viewer is on the Z-axis looking north to the -Z-axis toward the origin with +X to the right/east and +Y straight up. A modelling transformation (see the Transform node definition in [10 Grouping component](http://www.web3d.org/documents/specifications/19775-1/V3.3/Part01/components/group.html) and the Billboard node definition in [23 Navigation component](http://www.web3d.org/documents/specifications/19775-1/V3.3/Part01/components/navigation.html)) or viewing transformation (see the X3DViewpointNode node type definition in [23 Navigation component](http://www.web3d.org/documents/specifications/19775-1/V3.3/Part01/components/navigation.html) can be used to alter this default projection.
+[X3D Scene Authoring Hints - Coordinate Systems](http://www.web3d.org/x3d/content/examples/X3dSceneAuthoringHints.html#CoordinateSystems): 
+
+* Each Transform node can create a new relative coordinate system for all children nodes in the scene graph.
+    * Each set of axes follows the right-hand rule (RHR) for coordinate systems.
+* Angular rotations are expressed in radians, using right-hand rule (RHR) with thumb pointing along positive direction for axis of interest and the other fingers curling in the direction of positive rotation.
+    * Each set of orientations follows the right-hand rule (RHR) for angle rotations.
+    * ![right-hand rule rotations](RightHandRuleOrientations.png)
+* Local/world coordinate systems:
+    * +X-axis is nose/East
+    * +Y-axis is vertical/up
+    * +Z-axis is right-hand side (RHS)/South.
+
+Tapi koq SRM itu menggunakan z+up ya... ga kaya X3D yang y+up. Kayanya mending ikut X3D deh yang interoperable dan sudah banyak support.
+
+![SRM Position](srm-position.png)
+
+Koordinat $(0,0,0)$ adalah origin (pojok southwest) dari si tile dari Tile Map Service (TMS).
+Maka semua koordinat scene adalah untuk X pasti positif (dari west=0 ke east), dan untuk Z pasti negatif (dari south=0 ke north).
+
+### Right-handed to Left-handed
+
+* Between Right-handed and Left-handed: flip an axis
+* Between Y-up and Z-up: just swap the Y and Z, retain handedness
+
+### Units
+
+From [X3D Concepts](http://www.web3d.org/documents/specifications/19775-1/V3.3/Part01/concepts.html):
+
+Table 4.2 lists the initial base units for ISO/IEC 19775.
+
+Table 4.2 — Standard units
+
+| Category  | Initial base unit |
+|-----------|-------------------|
+|angle	| radian |
+|force	| newton |
+|length	| metre |
+|mass	| kilogram |
+
+Table 4.3 — Derived units
+
+| Category  | Initial base unit |
+|-----------|-------------------|
+| acceleration |	$length/second^2$ |
+| angular_rate |	$angle/second$ |
+| area	| $length^2$ |
+| speed	| $length/second$ |
+| volume |	$length^3$ |
+
+The standard colour space used by this International Standard is RGB where each colour component has the range [0.,1.].
+
+### Konversi ke Game Engine Coordinates
+
+Dalam sistem Lumen yang dipakai sebagai standar adalah sistem Second Life. Jadi pada saat image recognition/tracking, semua koordinatnya menggunakan aturan Second Life.
+
+* Dari koordinat Lumen ke Unreal, pada saat visualisasi Unreal, maka swap x dan y lalu koordinatnya akan discale menjadi Unreal Units (×0.01). Sebaliknya dari Unreal ke Lumen, koordinatenya discale menjadi SecondLife/Blender units (×100) lalu swap x dan y.
+* Dari koordinat Lumen ke Unity, pada saat visualisasi Unity, maka koordinatnya akan di-rotate 90degrees for X (pitch) sehingga y+ up dan z+ away. Sebaliknya dari Unity ke Lumen, koordinatenya dirotate -90degrees for X (pitch) menjadi SecondLife/Blender coordinates (y+ away, +z up).
+
+Untuk rotasi 3D, menggunakan style Blender/SecondLife. See also: [rotation Unreal](https://docs.unrealengine.com/latest/INT/API/Runtime/Core/Math/FRotator/index.html). Unit sudut adalah degrees, karena sudut degrees juga dipakai oleh Unreal/Unity/Blender. Pas kalkulasi internal baru diubah ke radian. Nama sudutnya buka alpha, beta, gamma tapi yang lebih deskriptif yaitu pitch (tengadah), roll (geleng clockwise), yaw (menoleh ke kiri):
+
+* Pitch (RX):  Looking up and down (0=Straight Ahead, +Up, -Down).
+* Roll (RY): Rotation about axis of screen, 0=Straight, +Clockwise, -CCW.
+* Yaw (RZ):  Rotating around (running in circles), 0=North, +West, -East. Kalo di Unreal: 0=East, +North, -South.
+
+### Tile Map Service (TMS)
+
+Untuk mendapatkan scene, gunakan koordinat TMS seperti yang digunakan oleh OpenStreetMap/OSM-3D/GDI-3D.
+Karena ada LOD, jadi bisa ada beberapa scene untuk tempat yang sama. Ini dapat digunakan Lumen sebagai konteks, apakah ingin mengolah
+sebuah ruangan (LOD 14), atau mengolah sebuah kota (LOD 8). Beda LOD, maka ukuran sebuah tile juga berbeda.
+
+## 2D to 3D
+
+Secara umum formulanya seperti ini: (dari [OpenCV Camera Calibration and 3D Reconstruction](http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html), belum memasukkan koefisien distorsi radial dan tangential)
+
+$$s \cdot uv = s \begin{bmatrix} u \\ v \\ 1 \end{bmatrix} =
+ICM \left[\begin{array}{c|c} R & t \end{array}\right] xyz =
+\begin{bmatrix} f_x & 0 & c_x \\ 0 & -f_y & c_y \\ 0 & 0 & 1 \end{bmatrix}
+\large{\left[\begin{array}{c|c} R & \mathbf{t} \end{array}\right]}
+\begin{bmatrix} x \\ y \\ z \\ 1 \end{bmatrix}
+$$
+
+* ICM : intrinsic camera matrix
+* $[R|t]$ = ECM = VM : extrinsic camera matrix = view matrix. How the _world_ is transformed *relative to the camera*.
+* $-f_y$ dibikin minus agar sesuai koordinat 2D image (u+ kanan, v+ bawah)
+
+Artinya untuk sebuah point 3D $(x,y,z)$ di _world coordinates_ menjadi _image coordinates_ ada 3 step pemrosesan: (penjelasan kerennya ada di [Dissecting the Camera Matrix, Part 2: The Extrinsic Matrix](http://ksimek.github.io/2012/08/22/extrinsic/))
+
+1. $\mathbf{t}$. Translasi dari world position menjadi camera-relative position. Setelah step ini koordinat $(0,0,0)$ berarti posisi camera.
+2. $R$. Rotasi. Setelah step ini maka right vector $(1,0,0)$, forward vector $(0,1,0)$, dan up vector $(0,0,1)$. Dengan kata lain titik 3D yang berada pada posisi tersebut persis di kanan, depan, dan atas kamera. Setelah step ini semua point berada pada _camera coordinates_. Ini setara dengan normalized camera dengan focal length 1 (meter) = $(f_x, f_y) = (1, 1)$ dan $(c_x, c_y) = (0, 0)$.
+3. $ICM$. Transformasi dari camera position menjadi perspective. Hasilnya adalah $(s \cdot u, s \cdot v, s)$, lalu tinggal dibagi $s$ untuk mendapatkan $u$ dan $v$ yaitu _image coordinates_.
