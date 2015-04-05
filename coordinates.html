@@ -80,7 +80,7 @@ img {
 <li>Di Unreal, pas import FBX, gunakan import scale 0.01. Dari meter menjadi cm.</li>
 <li>Di Unity, pas import FBX, gunakan import scale 1. Dari meter tetap meter.</li>
 </ul>
-<p><a href="http://wiki.secondlife.com/wiki/Coordinate">Second Life / OpenSimulator</a> uses meters. A sim is 256×256 (x×y) meters. x is longitude (from west to east, the wiki is partially incorrect, but the examples are good and are <a href="http://xahsl.org/sl/build_pos.html">verified here</a>), y is latitude (from south to north). z is altitude where 0 is lowest possible point. When someone is facing north, this is exactly same as Blender.</p>
+<p><a href="http://wiki.secondlife.com/wiki/Coordinate">Second Life / OpenSimulator</a> uses meters. A sim is 256×256 (x×y) meters. x is longitude (from west to east, <a href="http://xahsl.org/sl/build_pos.html">verified here</a>), y is latitude (from south to north). z is altitude where 0 is lowest possible point.</p>
 <p><a href="http://osm-3d.org">OSM-3D.org</a></p>
 <p>See:</p>
 <ul>
@@ -198,12 +198,26 @@ img {
 </div>
 <div id="konversi-ke-game-engine-coordinates" class="section level3">
 <h3>Konversi ke Game Engine Coordinates</h3>
-<p>Dalam sistem Lumen yang dipakai sebagai standar adalah sistem Second Life. Jadi pada saat image recognition/tracking, semua koordinatnya menggunakan aturan Second Life.</p>
+<p>Dalam sistem Lumen yang dipakai sebagai standar adalah sistem X3D. Jadi pada saat image recognition/tracking, semua koordinatnya menggunakan aturan X3D.</p>
 <ul>
-<li>Dari koordinat Lumen ke Unreal, pada saat visualisasi Unreal, maka swap x dan y lalu koordinatnya akan discale menjadi Unreal Units (×0.01). Sebaliknya dari Unreal ke Lumen, koordinatenya discale menjadi SecondLife/Blender units (×100) lalu swap x dan y.</li>
-<li>Dari koordinat Lumen ke Unity, pada saat visualisasi Unity, maka koordinatnya akan di-rotate 90degrees for X (pitch) sehingga y+ up dan z+ away. Sebaliknya dari Unity ke Lumen, koordinatenya dirotate -90degrees for X (pitch) menjadi SecondLife/Blender coordinates (y+ away, +z up).</li>
+<li><p>Dari koordinat Lumen ke Unreal, pada saat visualisasi Unreal, transformasi, lalu koordinatnya akan discale menjadi Unreal Units (×100).</p>
+<pre><code>xUnreal &lt;- -zIso * 100
+yUnreal &lt;- xIso * 100
+zUnreal &lt;- yIso * 100</code></pre>
+<p>Sebaliknya dari Unreal ke Lumen, koordinatenya discale menjadi Blender/X3D units (×0.01), lalu swap y dan z, lalu flip z.</p>
+<pre><code>xIso &lt;- yUnreal * 0.01
+yIso &lt;- zUnreal * 0.01
+zIso &lt;- -xUnreal * 0.01</code></pre></li>
+<li><p>Dari koordinat Lumen ke Unity, pada saat visualisasi Unity:</p>
+<pre><code>xUnity &lt;- xIso
+yUnity &lt;- yIso
+zUnity &lt;- -zIso</code></pre>
+<p>Sebaliknya dari Unity ke Lumen:</p>
+<pre><code>xIso &lt;- xUnity
+yIso &lt;- yUnity
+zIso &lt;- -zUnity</code></pre></li>
 </ul>
-<p>Untuk rotasi 3D, menggunakan style Blender/SecondLife. See also: <a href="https://docs.unrealengine.com/latest/INT/API/Runtime/Core/Math/FRotator/index.html">rotation Unreal</a>. Unit sudut adalah degrees, karena sudut degrees juga dipakai oleh Unreal/Unity/Blender. Pas kalkulasi internal baru diubah ke radian. Nama sudutnya buka alpha, beta, gamma tapi yang lebih deskriptif yaitu pitch (tengadah), roll (geleng clockwise), yaw (menoleh ke kiri):</p>
+<p>Untuk rotasi 3D, menggunakan style X3D. See also: <a href="https://docs.unrealengine.com/latest/INT/API/Runtime/Core/Math/FRotator/index.html">rotation Unreal</a>. Unit sudut adalah degrees (counterclockwise+) agar lebih mudah karena sudut degrees juga dipakai oleh Unreal/Unity/Blender, meski standar ISO adalah radian. Pas kalkulasi internal baru diubah ke radian. Nama sudutnya buka alpha, beta, gamma tapi yang lebih deskriptif yaitu pitch (tengadah), roll (geleng clockwise), yaw (menoleh ke kiri):</p>
 <ul>
 <li>Pitch (RX): Looking up and down (0=Straight Ahead, +Up, -Down).</li>
 <li>Roll (RY): Rotation about axis of screen, 0=Straight, +Clockwise, -CCW.</li>
@@ -212,7 +226,7 @@ img {
 </div>
 <div id="tile-map-service-tms" class="section level3">
 <h3>Tile Map Service (TMS)</h3>
-<p>Untuk mendapatkan scene, gunakan koordinat TMS seperti yang digunakan oleh OpenStreetMap/OSM-3D/GDI-3D. Karena ada LOD, jadi bisa ada beberapa scene untuk tempat yang sama. Ini dapat digunakan Lumen sebagai konteks, apakah ingin mengolah sebuah ruangan (LOD 14), atau mengolah sebuah kota (LOD 8). Beda LOD, maka ukuran sebuah tile juga berbeda.</p>
+<p>Untuk mendapatkan scene, gunakan koordinat TMS seperti yang digunakan oleh OpenStreetMap/OSM-3D/GDI-3D. Karena ada LOD, jadi bisa ada beberapa scene untuk tempat yang sama. Ini dapat digunakan Lumen sebagai konteks, apakah ingin mengolah sebuah ruangan (LOD 18), atau mengolah sebuah kota (LOD 11). Beda LOD, maka ukuran sebuah tile juga berbeda.</p>
 </div>
 </div>
 <div id="d-to-3d" class="section level2">
@@ -235,6 +249,568 @@ ICM \left[\begin{array}{c|c} R &amp; t \end{array}\right] xyz =
 <li><span class="math">\(R\)</span>. Rotasi. Setelah step ini maka right vector <span class="math">\((1,0,0)\)</span>, forward vector <span class="math">\((0,1,0)\)</span>, dan up vector <span class="math">\((0,0,1)\)</span>. Dengan kata lain titik 3D yang berada pada posisi tersebut persis di kanan, depan, dan atas kamera. Setelah step ini semua point berada pada <em>camera coordinates</em>. Ini setara dengan normalized camera dengan focal length 1 (meter) = <span class="math">\((f_x, f_y) = (1, 1)\)</span> dan <span class="math">\((c_x, c_y) = (0, 0)\)</span>.</li>
 <li><span class="math">\(ICM\)</span>. Transformasi dari camera position menjadi perspective. Hasilnya adalah <span class="math">\((s \cdot u, s \cdot v, s)\)</span>, lalu tinggal dibagi <span class="math">\(s\)</span> untuk mendapatkan <span class="math">\(u\)</span> dan <span class="math">\(v\)</span> yaitu <em>image coordinates</em>.</li>
 </ol>
+<p>Untuk mendapatkan <span class="math">\([R|\mathbf{t}]\)</span> dari posisi kamera <span class="math">\(t_c\)</span> dan rotasi kamera <span class="math">\(R_c\)</span>, <a href="http://ksimek.github.io/2012/08/22/extrinsic/">maka</a>:</p>
+<p><span class="math">\[\left[
+\begin{array}{c|c}
+R &amp; \mathbf{t} \\
+\hline
+\mathbf{0} &amp; 1 \\
+\end{array}
+\right]
+  = 
+\left[
+\begin{array}{c|c}
+R_c^T &amp; -R_c^TC \\
+\hline
+\mathbf{0} &amp; 1 \\
+\end{array}
+\right]
+\]</span></p>
+</div>
+<div id="openstreetmap-osm-3d" class="section level2">
+<h2>OpenStreetMap &amp; OSM-3D</h2>
+<div id="layers" class="section level3">
+<h3>Layers</h3>
+<p>Included:</p>
+<ol style="list-style-type: decimal">
+<li>Aeroway: bandara</li>
+<li>Amenity: toilets, telephones, banks, pharmacies, cafes, parking and schools</li>
+<li>Barrier</li>
+<li>Boundary</li>
+<li>Building</li>
+<li>Emergency</li>
+<li>Geological</li>
+<li>Highway</li>
+<li>Historic</li>
+<li>Landuse</li>
+<li>Natural</li>
+<li>Public Transport</li>
+<li>Railway</li>
+<li>Route</li>
+<li>Waterway</li>
+</ol>
+<p>Excluded:</p>
+<ol style="list-style-type: decimal">
+<li>Aerialway</li>
+<li>Contact – not a GIS thing</li>
+<li>Contact Information – not a GIS thing</li>
+<li>Craft</li>
+<li>Leisure</li>
+<li>Man Made</li>
+<li>Military</li>
+<li>Office</li>
+<li>Places</li>
+<li>Power</li>
+<li>Shop</li>
+<li>Sport</li>
+<li>Tourism</li>
+<li>Traffic calming</li>
+</ol>
+</div>
+<div id="export" class="section level3">
+<h3>Export</h3>
+<p>Bandung Metro: <a href="http://www.openstreetmap.org/export#map=13/-6.9345/107.6052" class="uri">http://www.openstreetmap.org/export#map=13/-6.9345/107.6052</a> <a href="http://api.openstreetmap.org/api/0.6/map?bbox=107.4705" class="uri">http://api.openstreetmap.org/api/0.6/map?bbox=107.4705</a>,-7.0111,107.74,-6.8579</p>
+<p>LOD 13. Boundaries: lat=-7.0111..-6.8579, lng=107.4705..107.7400.</p>
+<p>Jakarta Metro: <a href="https://mapzen.com/metro-extracts/" class="uri">https://mapzen.com/metro-extracts/</a> -&gt; OSM XML</p>
+<p>Indonesia: <a href="http://download.geofabrik.de/asia/indonesia.html" class="uri">http://download.geofabrik.de/asia/indonesia.html</a></p>
+<p>Tiles: <a href="http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames" class="uri">http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames</a></p>
+<pre class="r"><code>library(pander)
+
+deg2num&lt;-function(lat_deg, lon_deg, zoom){
+  lat_rad &lt;- lat_deg * pi /180
+  n &lt;- 2.0 ^ zoom
+  xtile &lt;- floor((lon_deg + 180.0) / 360.0 * n)
+  ytile = floor((1.0 - log(tan(lat_rad) + (1 / cos(lat_rad))) / pi) / 2.0 * n)
+  return( c(xtile, ytile))
+#  return(paste(paste(&quot;http://a.tile.openstreetmap.org&quot;, zoom, xtile, ytile, sep=&quot;/&quot;),&quot;.png&quot;,sep=&quot;&quot;))
+}
+
+deg2num.all&lt;-function(lat_deg, lon_deg){
+  nums &lt;- as.data.frame(matrix(ncol=6,nrow=21))
+  colnames(nums) &lt;- c(&#39;zoom&#39;, &#39;x&#39;, &#39;y&#39;, &#39;mapquest_osm&#39;, &#39;mapquest_aerial&#39;, &#39;osm&#39;)
+  rownames(nums) &lt;- 0:20
+  for (zoom in 0:20) {
+    num &lt;- deg2num(lat_deg, lon_deg, zoom)
+    nums[1+zoom,&#39;zoom&#39;] &lt;- zoom
+    nums[1+zoom,&#39;x&#39;] &lt;- num[1]
+    nums[1+zoom,&#39;y&#39;] &lt;- num[2]
+    nums[1+zoom,&#39;mapquest_osm&#39;] &lt;- paste(&#39;http://otile1.mqcdn.com/tiles/1.0.0/map/&#39;, zoom, &#39;/&#39;, num[1], &#39;/&#39;, num[2], &#39;.jpg&#39;, sep=&#39;&#39;)
+    nums[1+zoom,&#39;mapquest_aerial&#39;] &lt;- paste(&#39;http://otile1.mqcdn.com/tiles/1.0.0/sat/&#39;, zoom, &#39;/&#39;, num[1], &#39;/&#39;, num[2], &#39;.jpg&#39;, sep=&#39;&#39;)
+    nums[1+zoom,&#39;osm&#39;] &lt;- paste(&#39;http://a.tile.openstreetmap.org/&#39;, zoom, &#39;/&#39;, num[1], &#39;/&#39;, num[2], &#39;.png&#39;, sep=&#39;&#39;)
+  }
+  return(nums)
+}
+
+num2deg&lt;-function(zoom, xtile, ytile){
+  n &lt;- 2^zoom
+  lon_deg &lt;- xtile / n * 360.0 - 180.0
+  lat_rad &lt;- atan(sinh(pi * (1 - 2 * ytile / n)))
+  lat_deg &lt;- lat_rad * 180.0 / pi
+  ret &lt;- c(lat_deg, lon_deg)
+  names(ret) &lt;- c(&#39;lat_deg&#39;, &#39;lng_deg&#39;)
+  return(ret)
+}
+
+# Bippo
+# Aerial in Bandung only available to up zoom 11
+pander(deg2num(-6.872410, 107.608834, 11))</code></pre>
+<p><em>1636</em> and <em>1063</em></p>
+<pre class="r"><code># Note: the best zoom in most Bandung layers is 18
+pander(deg2num(-6.872410, 107.608834, 18))</code></pre>
+<p><em>209430</em> and <em>136088</em></p>
+<pre class="r"><code>pander(deg2num.all(-6.872410, 107.608834))</code></pre>
+<table>
+<caption>Table continues below</caption>
+<colgroup>
+<col width="12%" />
+<col width="9%" />
+<col width="9%" />
+<col width="9%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center"> </th>
+<th align="center">zoom</th>
+<th align="center">x</th>
+<th align="center">y</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>0</strong></td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>1</strong></td>
+<td align="center">1</td>
+<td align="center">1</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>2</strong></td>
+<td align="center">2</td>
+<td align="center">3</td>
+<td align="center">2</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>3</strong></td>
+<td align="center">3</td>
+<td align="center">6</td>
+<td align="center">4</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>4</strong></td>
+<td align="center">4</td>
+<td align="center">12</td>
+<td align="center">8</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>5</strong></td>
+<td align="center">5</td>
+<td align="center">25</td>
+<td align="center">16</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>6</strong></td>
+<td align="center">6</td>
+<td align="center">51</td>
+<td align="center">33</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>7</strong></td>
+<td align="center">7</td>
+<td align="center">102</td>
+<td align="center">66</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>8</strong></td>
+<td align="center">8</td>
+<td align="center">204</td>
+<td align="center">132</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>9</strong></td>
+<td align="center">9</td>
+<td align="center">409</td>
+<td align="center">265</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>10</strong></td>
+<td align="center">10</td>
+<td align="center">818</td>
+<td align="center">531</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>11</strong></td>
+<td align="center">11</td>
+<td align="center">1636</td>
+<td align="center">1063</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>12</strong></td>
+<td align="center">12</td>
+<td align="center">3272</td>
+<td align="center">2126</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>13</strong></td>
+<td align="center">13</td>
+<td align="center">6544</td>
+<td align="center">4252</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>14</strong></td>
+<td align="center">14</td>
+<td align="center">13089</td>
+<td align="center">8505</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>15</strong></td>
+<td align="center">15</td>
+<td align="center">26178</td>
+<td align="center">17011</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>16</strong></td>
+<td align="center">16</td>
+<td align="center">52357</td>
+<td align="center">34022</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>17</strong></td>
+<td align="center">17</td>
+<td align="center">104715</td>
+<td align="center">68044</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>18</strong></td>
+<td align="center">18</td>
+<td align="center">209430</td>
+<td align="center">136088</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>19</strong></td>
+<td align="center">19</td>
+<td align="center">418860</td>
+<td align="center">272176</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>20</strong></td>
+<td align="center">20</td>
+<td align="center">837721</td>
+<td align="center">544353</td>
+</tr>
+</tbody>
+</table>
+<table>
+<caption>Table continues below</caption>
+<colgroup>
+<col width="12%" />
+<col width="83%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center"> </th>
+<th align="center">mapquest_osm</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>0</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/0/0/0.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/0/0/0.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>1</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/1/1/1.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/1/1/1.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>2</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/2/3/2.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/2/3/2.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>3</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/3/6/4.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/3/6/4.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>4</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/4/12/8.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/4/12/8.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>5</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/5/25/16.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/5/25/16.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>6</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/6/51/33.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/6/51/33.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>7</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/7/102/66.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/7/102/66.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>8</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/8/204/132.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/8/204/132.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>9</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/9/409/265.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/9/409/265.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>10</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/10/818/531.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/10/818/531.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>11</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/11/1636/1063.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/11/1636/1063.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>12</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/12/3272/2126.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/12/3272/2126.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>13</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/13/6544/4252.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/13/6544/4252.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>14</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/14/13089/8505.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/14/13089/8505.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>15</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/15/26178/17011.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/15/26178/17011.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>16</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/16/52357/34022.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/16/52357/34022.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>17</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/17/104715/68044.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/17/104715/68044.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>18</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/18/209430/136088.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/18/209430/136088.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>19</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/19/418860/272176.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/19/418860/272176.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>20</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/20/837721/544353.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/20/837721/544353.jpg</a></td>
+</tr>
+</tbody>
+</table>
+<table>
+<caption>Table continues below</caption>
+<colgroup>
+<col width="12%" />
+<col width="83%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center"> </th>
+<th align="center">mapquest_aerial</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>0</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/0/0/0.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/0/0/0.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>1</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/1/1/1.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/1/1/1.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>2</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/2/3/2.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/2/3/2.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>3</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/3/6/4.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/3/6/4.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>4</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/4/12/8.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/4/12/8.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>5</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/5/25/16.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/5/25/16.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>6</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/6/51/33.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/6/51/33.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>7</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/7/102/66.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/7/102/66.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>8</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/8/204/132.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/8/204/132.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>9</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/9/409/265.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/9/409/265.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>10</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/10/818/531.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/10/818/531.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>11</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/11/1636/1063.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/11/1636/1063.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>12</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/12/3272/2126.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/12/3272/2126.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>13</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/13/6544/4252.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/13/6544/4252.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>14</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/14/13089/8505.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/14/13089/8505.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>15</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/15/26178/17011.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/15/26178/17011.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>16</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/16/52357/34022.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/16/52357/34022.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>17</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/17/104715/68044.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/17/104715/68044.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>18</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/18/209430/136088.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/18/209430/136088.jpg</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>19</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/19/418860/272176.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/19/418860/272176.jpg</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>20</strong></td>
+<td align="center"><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/20/837721/544353.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/20/837721/544353.jpg</a></td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col width="12%" />
+<col width="72%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center"> </th>
+<th align="center">osm</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>0</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/0/0/0.png" class="uri">http://a.tile.openstreetmap.org/0/0/0.png</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>1</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/1/1/1.png" class="uri">http://a.tile.openstreetmap.org/1/1/1.png</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>2</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/2/3/2.png" class="uri">http://a.tile.openstreetmap.org/2/3/2.png</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>3</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/3/6/4.png" class="uri">http://a.tile.openstreetmap.org/3/6/4.png</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>4</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/4/12/8.png" class="uri">http://a.tile.openstreetmap.org/4/12/8.png</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>5</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/5/25/16.png" class="uri">http://a.tile.openstreetmap.org/5/25/16.png</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>6</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/6/51/33.png" class="uri">http://a.tile.openstreetmap.org/6/51/33.png</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>7</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/7/102/66.png" class="uri">http://a.tile.openstreetmap.org/7/102/66.png</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>8</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/8/204/132.png" class="uri">http://a.tile.openstreetmap.org/8/204/132.png</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>9</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/9/409/265.png" class="uri">http://a.tile.openstreetmap.org/9/409/265.png</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>10</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/10/818/531.png" class="uri">http://a.tile.openstreetmap.org/10/818/531.png</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>11</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/11/1636/1063.png" class="uri">http://a.tile.openstreetmap.org/11/1636/1063.png</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>12</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/12/3272/2126.png" class="uri">http://a.tile.openstreetmap.org/12/3272/2126.png</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>13</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/13/6544/4252.png" class="uri">http://a.tile.openstreetmap.org/13/6544/4252.png</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>14</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/14/13089/8505.png" class="uri">http://a.tile.openstreetmap.org/14/13089/8505.png</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>15</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/15/26178/17011.png" class="uri">http://a.tile.openstreetmap.org/15/26178/17011.png</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>16</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/16/52357/34022.png" class="uri">http://a.tile.openstreetmap.org/16/52357/34022.png</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>17</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/17/104715/68044.png" class="uri">http://a.tile.openstreetmap.org/17/104715/68044.png</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>18</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/18/209430/136088.png" class="uri">http://a.tile.openstreetmap.org/18/209430/136088.png</a></td>
+</tr>
+<tr class="even">
+<td align="center"><strong>19</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/19/418860/272176.png" class="uri">http://a.tile.openstreetmap.org/19/418860/272176.png</a></td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>20</strong></td>
+<td align="center"><a href="http://a.tile.openstreetmap.org/20/837721/544353.png" class="uri">http://a.tile.openstreetmap.org/20/837721/544353.png</a></td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>pander(num2deg(18, 209430, 136088))</code></pre>
+<p><em>-6.872</em> and <em>107.6</em></p>
+<p>Bippo: -6,872410, 107.608834 -&gt; tile zoom=18 x=209430 y=136088, at 6.872, 107.6</p>
+<ul>
+<li><a href="http://otile1.mqcdn.com/tiles/1.0.0/map/18/209430/136088.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/map/18/209430/136088.jpg</a></li>
+<li><a href="http://otile1.mqcdn.com/tiles/1.0.0/sat/11/1636/1063.jpg" class="uri">http://otile1.mqcdn.com/tiles/1.0.0/sat/11/1636/1063.jpg</a></li>
+<li><a href="http://a.tile.openstreetmap.org/18/209430/136088.png" class="uri">http://a.tile.openstreetmap.org/18/209430/136088.png</a></li>
+</ul>
+<p>ITB (entire):</p>
+<p>ITB (Labtek V):</p>
+</div>
 </div>
 
 
