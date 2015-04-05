@@ -249,7 +249,7 @@ ICM \left[\begin{array}{c|c} R &amp; t \end{array}\right] xyz =
 <li><span class="math">\(R\)</span>. Rotasi. Setelah step ini maka right vector <span class="math">\((1,0,0)\)</span>, forward vector <span class="math">\((0,1,0)\)</span>, dan up vector <span class="math">\((0,0,1)\)</span>. Dengan kata lain titik 3D yang berada pada posisi tersebut persis di kanan, depan, dan atas kamera. Setelah step ini semua point berada pada <em>camera coordinates</em>. Ini setara dengan normalized camera dengan focal length 1 (meter) = <span class="math">\((f_x, f_y) = (1, 1)\)</span> dan <span class="math">\((c_x, c_y) = (0, 0)\)</span>.</li>
 <li><span class="math">\(ICM\)</span>. Transformasi dari camera position menjadi perspective. Hasilnya adalah <span class="math">\((s \cdot u, s \cdot v, s)\)</span>, lalu tinggal dibagi <span class="math">\(s\)</span> untuk mendapatkan <span class="math">\(u\)</span> dan <span class="math">\(v\)</span> yaitu <em>image coordinates</em>.</li>
 </ol>
-<p>Untuk mendapatkan <span class="math">\([R|\mathbf{t}]\)</span> dari posisi kamera <span class="math">\(t_c\)</span> dan rotasi kamera <span class="math">\(R_c\)</span>, <a href="http://ksimek.github.io/2012/08/22/extrinsic/">maka</a>:</p>
+<p>Untuk mendapatkan <span class="math">\([R|\mathbf{t}]\)</span> dari posisi kamera <span class="math">\(t_c\)</span> dan rotasi kamera <span class="math">\(R_c\)</span>, <a href="http://ksimek.github.io/2012/08/22/extrinsic/">maka</a>: (<span class="math">\(^T\)</span>: transpose)</p>
 <p><span class="math">\[\left[
 \begin{array}{c|c}
 R &amp; \mathbf{t} \\
@@ -260,7 +260,7 @@ R &amp; \mathbf{t} \\
   = 
 \left[
 \begin{array}{c|c}
-R_c^T &amp; -R_c^TC \\
+R_c^T &amp; -R_c^{T} t_c \\
 \hline
 \mathbf{0} &amp; 1 \\
 \end{array}

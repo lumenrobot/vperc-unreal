@@ -168,7 +168,7 @@ Artinya untuk sebuah point 3D $(x,y,z)$ di _world coordinates_ menjadi _image co
 2. $R$. Rotasi. Setelah step ini maka right vector $(1,0,0)$, forward vector $(0,1,0)$, dan up vector $(0,0,1)$. Dengan kata lain titik 3D yang berada pada posisi tersebut persis di kanan, depan, dan atas kamera. Setelah step ini semua point berada pada _camera coordinates_. Ini setara dengan normalized camera dengan focal length 1 (meter) = $(f_x, f_y) = (1, 1)$ dan $(c_x, c_y) = (0, 0)$.
 3. $ICM$. Transformasi dari camera position menjadi perspective. Hasilnya adalah $(s \cdot u, s \cdot v, s)$, lalu tinggal dibagi $s$ untuk mendapatkan $u$ dan $v$ yaitu _image coordinates_.
 
-Untuk mendapatkan $[R|\mathbf{t}]$ dari posisi kamera $t_c$ dan rotasi kamera $R_c$, [maka](http://ksimek.github.io/2012/08/22/extrinsic/):
+Untuk mendapatkan $[R|\mathbf{t}]$ dari posisi kamera $t_c$ dan rotasi kamera $R_c$, [maka](http://ksimek.github.io/2012/08/22/extrinsic/): ($^T$: transpose)
 
 $$\left[
 \begin{array}{c|c}
@@ -180,7 +180,7 @@ R & \mathbf{t} \\
   = 
 \left[
 \begin{array}{c|c}
-R_c^T & -R_c^TC \\
+R_c^T & -R_c^{T} t_c \\
 \hline
 \mathbf{0} & 1 \\
 \end{array}
