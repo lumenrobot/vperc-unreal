@@ -472,281 +472,54 @@ Di kantor Bippo:
 
 Recall pedoman rotasi sebagai berikut:
 
-* Pitch (RX):  Looking up and down (0=Straight Ahead, +Up, -Down).
-* Roll (RY): Rotation about axis of screen, 0=Straight, +Clockwise, -CCW.
-* Yaw (RZ):  Rotating around (running in circles), 0=North, +West, -East. Kalo di Unreal: 0=East, +North, -South.
+* Pitch ($R_{cx}$):  Looking up and down (0=Straight Ahead, +Up, -Down).
+* Roll ($R_{cy}$): Rotation about axis of screen, 0=Straight, +Clockwise, -CCW.
+* Yaw ($R_{cz}$):  Rotating around (running in circles), 0=North, +West, -East. Kalo di Unreal: 0=East, +North, -South.
 
-Perhatikan bahwa tugas `Rt` adalah mentranslasi lalu merotasi titik 3D agar berada dalam koordinat kamera.
-Jadi bisa disimpulkan bahwa translasi `t` = (-x, -y, -z) dari kamera, dan `(α, β, γ)` = (-pitch, -roll, -yaw) rotasi kamera.
+Dari [Rotation matrix: In three dimensions](https://en.wikipedia.org/wiki/Rotation_matrix#Basic_rotations):
 
-Dari [Rotation matrix: In three dimensions](https://en.wikipedia.org/wiki/Rotation_matrix#Basic_rotations) maka bisa disimpulkan:
+$$R_cx(\alpha) = \begin{bmatrix}
+  1 & 0 & 0 \\
+  0 & \cos \alpha & -\sin \alpha \\
+  0 & \sin \alpha & \cos \alpha
+\end{bmatrix}
+R_cy(\beta) = \begin{bmatrix}
+  \cos \beta & 0 & \sin \beta \\
+  0          & 1 & 0 \\
+  -sin \beta & 0 & \cos \beta
+\end{bmatrix}
+R_cz(\gamma) = \begin{bmatrix}
+  \cos \gamma & -\sin \gamma & 0 \\
+  \sin \gamma &   cos \gamma & 0 \\
+  0           & 0            & 1
+\end{bmatrix}
+$$
 
-<math xmlns="http://www.w3.org/1998/Math/MathML">
-<mrow class="MJX-TeXAtom-ORD">
-  <mstyle displaystyle="true">
-    <mtable columnalign="right left" rowspacing="0.9em 0.9em 0.3em" columnspacing="0em 0em">
-      <mtr>
-        <mtd>
-          <msub>
-            <mi>R</mi>
-            <mi>x</mi>
-          </msub>
-          <mo stretchy="false">(</mo>
-          <mi>α</mi>
-          <mo stretchy="false">)</mo>
-        </mtd>
-        <mtd>
-          <mo lspace="mediummathspace" form="infix">=</mo>
-          <mrow open="[" close="]">
-            <mo>[</mo>
-            <mtable rowspacing="4pt 0.7em 0.7em" columnspacing="1em">
-              <mtr>
-                <mtd>
-                  <mn>1</mn>
-                </mtd>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-              </mtr>
-              <mtr>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-                <mtd>
-                  <mi>cos</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>α</mi>
-                </mtd>
-                <mtd>
-                  <mo>−<!-- − --></mo>
-                  <mi>sin</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>α</mi>
-                </mtd>
-              </mtr>
-              <mtr>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-                <mtd>
-                  <mi>sin</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>α</mi>
-                </mtd>
-                <mtd>
-                  <mi>cos</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>α</mi>
-                </mtd>
-              </mtr>
-            </mtable>
-            <mo>]</mo>
-          </mrow>
-        </mtd>
-      </mtr>
-      <mtr>
-        <mtd>
-          <msub>
-            <mi>R</mi>
-            <mi>y</mi>
-          </msub>
-          <mo stretchy="false">(</mo>
-          <mi>β</mi>
-          <mo stretchy="false">)</mo>
-        </mtd>
-        <mtd>
-          <mo lspace="mediummathspace" form="infix">=</mo>
-          <mrow open="[" close="]">
-            <mo>[</mo>
-            <mtable rowspacing="0.7em 0.7em 0.4em" columnspacing="1em">
-              <mtr>
-                <mtd>
-                  <mi>cos</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>β</mi>
-                </mtd>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-                <mtd>
-                  <mi>sin</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>β</mi>
-                </mtd>
-              </mtr>
-              <mtr>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-                <mtd>
-                  <mn>1</mn>
-                </mtd>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-              </mtr>
-              <mtr>
-                <mtd>
-                  <mo>−<!-- − --></mo>
-                  <mi>sin</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>β</mi>
-                </mtd>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-                <mtd>
-                  <mi>cos</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>β</mi>
-                </mtd>
-              </mtr>
-            </mtable>
-            <mo>]</mo>
-          </mrow>
-        </mtd>
-      </mtr>
-      <mtr>
-        <mtd>
-          <msub>
-            <mi>R</mi>
-            <mi>z</mi>
-          </msub>
-          <mo stretchy="false">(</mo>
-          <mi>γ</mi>
-          <mo stretchy="false">)</mo>
-        </mtd>
-        <mtd>
-          <mo lspace="mediummathspace" form="infix">=</mo>
-          <mrow open="[" close="]">
-            <mo>[</mo>
-            <mtable rowspacing="0.7em 0.7em 0.4em" columnspacing="1em">
-              <mtr>
-                <mtd>
-                  <mi>cos</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>γ</mi>
-                </mtd>
-                <mtd>
-                  <mo>−<!-- − --></mo>
-                  <mi>sin</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>γ</mi>
-                </mtd>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-              </mtr>
-              <mtr>
-                <mtd>
-                  <mi>sin</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>γ</mi>
-                </mtd>
-                <mtd>
-                  <mi>cos</mi>
-                  <mo>a<!-- a --></mo>
-                  <mi>γ</mi>
-                </mtd>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-              </mtr>
-              <mtr>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-                <mtd>
-                  <mn>0</mn>
-                </mtd>
-                <mtd>
-                  <mn>1</mn>
-                </mtd>
-              </mtr>
-            </mtable>
-            <mo>]</mo>
-          </mrow>
-        </mtd>
-      </mtr>
-    </mtable>
-  </mstyle>
-</mrow>
-</math>
+Untuk menggabungkan $R_cx$, $R_cy$, dan $R_cz$ kayaknya urutannya begini:
 
-Untuk menggabungkan RX, RY, dan RZ untuk proyeksi ada 2 kemungkinan, salah satunya pasti benar :P Untuk membuktikan, tinggal test pakai pitch dan yaw saja (jangan roll, biar gak pusing) plus translation.
+$$R_c = R_{cz(γ)} R_{cy(β)} R_{cx(α)}
+$$
 
-<math xmlns="http://www.w3.org/1998/Math/MathML">
-<mrow class="MJX-TeXAtom-ORD">
-  <mstyle displaystyle="true">
-    <mi>R</mi>
-    <mo>=</mo>
-    <msub>
-      <mi>R</mi>
-      <mi>z</mi>
-    </msub>
-    <mo stretchy="false">(</mo>
-    <mi>γ</mi>
-    <mo stretchy="false">)</mo>
-    <mspace width="thinmathspace"></mspace>
-    <msub>
-      <mi>R</mi>
-      <mi>y</mi>
-    </msub>
-    <mo stretchy="false">(</mo>
-    <mi>β<!-- β --></mi>
-    <mo stretchy="false">)</mo>
-    <mspace width="thinmathspace"></mspace>
-    <msub>
-      <mi>R</mi>
-      <mi>x</mi>
-    </msub>
-    <mo stretchy="false">(</mo>
-    <mi>α</mi>
-    <mo stretchy="false">)</mo>
-    <mspace width="thinmathspace"></mspace>
-    <mspace width="negativethinmathspace"></mspace>
-  </mstyle>
-</mrow>
-</math>
+Perhatikan bahwa tugas $[R|t]$ adalah mentranslasi lalu merotasi titik 3D agar berada dalam koordinat kamera.
+Setelah didapatkan $R_c$ yaitu rotasi kamera dan $t_c$ yaitu translasi kamera, kita bisa mencari $[R|t]$.
+Untuk mendapatkan $[R|\mathbf{t}]$ dari posisi kamera $t_c$ dan rotasi kamera $R_c$, [maka](http://ksimek.github.io/2012/08/22/extrinsic/): ($^T$: transpose)
 
-atau:
-
-<math xmlns="http://www.w3.org/1998/Math/MathML">
-<mrow class="MJX-TeXAtom-ORD">
-  <mstyle displaystyle="true">
-    <mi>R</mi>
-    <mo>=</mo>
-    <msub>
-      <mi>R</mi>
-      <mi>x</mi>
-    </msub>
-    <mo stretchy="false">(</mo>
-    <mi>α<!-- α --></mi>
-    <mo stretchy="false">)</mo>
-    <mspace width="thinmathspace"></mspace>
-    <msub>
-      <mi>R</mi>
-      <mi>y</mi>
-    </msub>
-    <mo stretchy="false">(</mo>
-    <mi>β<!-- β --></mi>
-    <mo stretchy="false">)</mo>
-    <mspace width="thinmathspace"></mspace>
-    <msub>
-      <mi>R</mi>
-      <mi>z</mi>
-    </msub>
-    <mo stretchy="false">(</mo>
-    <mi>γ<!-- γ --></mi>
-    <mo stretchy="false">)</mo>
-    <mspace width="thinmathspace"></mspace>
-    <mspace width="negativethinmathspace"></mspace>
-  </mstyle>
-</mrow>
-</math>
+$$\left[
+\begin{array}{c|c}
+R & \mathbf{t} \\
+\hline
+\mathbf{0} & 1 \\
+\end{array}
+\right]
+  = 
+\left[
+\begin{array}{c|c}
+R_c^T & -R_c^{T} t_c \\
+\hline
+\mathbf{0} & 1 \\
+\end{array}
+\right]
+$$
 
 Dari [Rotation in 3D using OpenCV](http://jepsonsblog.blogspot.com/2012/11/rotation-in-3d-using-opencvs.html):
 
