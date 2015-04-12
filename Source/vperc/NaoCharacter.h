@@ -2,17 +2,17 @@
 
 #pragma once
 
-#include "GameFramework/Pawn.h"
-#include "NaoPawn.generated.h"
+#include "GameFramework/Character.h"
+#include "NaoCharacter.generated.h"
 
 UCLASS()
-class VPERC_API ANaoPawn : public APawn
+class VPERC_API ANaoCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this pawn's properties
-	ANaoPawn();
+	// Sets default values for this character's properties
+	ANaoCharacter();
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
