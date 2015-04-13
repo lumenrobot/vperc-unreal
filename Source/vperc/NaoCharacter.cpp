@@ -105,7 +105,9 @@ void ANaoCharacter::Tick( float DeltaTime )
 	Super::Tick(DeltaTime);
 
 	//UE_LOG(LogLumen, Log, TEXT("NaoCharacter Deltatime %f"), DeltaTime);
-	//UE_LOG(LogLumen, Log, TEXT("NaoCharacter Avatar %s"), *FString(avatar->str().c_str()));
+	// even simple *FString on here is not stable!!!! UTF8_TO_TCHAR also crash intermittently but at least it supports UTF-8 characters properly yay! :p
+	//char *avatarStr = _strdup(avatar->str().c_str());
+	//UE_LOG(LogLumen, Log, TEXT("NaoCharacter Avatar %s"), UTF8_TO_TCHAR(avatarStr));
 	FVector cur = GetActorLocation();
 	SetActorLocation(FVector(cur.X, cur.Y + 10 * DeltaTime, cur.Z));
 
