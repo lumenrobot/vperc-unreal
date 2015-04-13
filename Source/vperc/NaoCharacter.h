@@ -38,6 +38,7 @@ private:
 	boost::shared_ptr<Avatar> avatar;
 	std::string consumer_tag;
 	Channel::ptr_t channel;
+	bool playing = false;
 
 	// Position animation
 	ublas::vector<double> positionDelta;
