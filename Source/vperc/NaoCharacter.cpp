@@ -72,10 +72,10 @@ void ANaoCharacter::BeginPlay()
 		// otherwise you'll get corrupted std::string. ~Hendy
 		channel = Channel::CreateFromUri(amqpUri);
 
-	//	string queue = channel->DeclareQueue("");
-	//	UE_LOG(LogLumen, Log, TEXT("Publishing to '%s'..."), *FString(queue.c_str()));
-	//	BasicMessage::ptr_t message = BasicMessage::Create("wah keren");
-	//	channel->BasicPublish("", queue, message);
+		string queue = channel->DeclareQueue("");
+		UE_LOG(LogLumen, Log, TEXT("Publishing to '%s'..."), *FString(queue.c_str()));
+		BasicMessage::ptr_t message = BasicMessage::Create("wah keren");
+		channel->BasicPublish("", queue, message);
 
 	//	string avatarCommandQueue;
 	//	channel->DeclareQueue(avatarCommandQueue);
