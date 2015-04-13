@@ -6,4 +6,5 @@ Binaries
 *.suo
 *.sdf
 *.opensdf
-*.sln
+# biar bisa diopen langsung di VS, kalo UEditor ga bisa jalan trus butuh Build langsung DLL-nya
+#*.sln

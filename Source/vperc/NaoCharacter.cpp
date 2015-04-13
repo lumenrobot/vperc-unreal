@@ -84,9 +84,11 @@ void ANaoCharacter::BeginPlay()
 		string avatarCommandKey = "avatar.NAO.command";
 		channel->BindQueue(avatarCommandQueue, topic, avatarCommandKey);
 		consumer_tag = channel->BasicConsume(avatarCommandQueue, "");
-	//	UE_LOG(LogLumen, Log, TEXT("Consuming %s (topic=%s routing=%s) ..."),
-	//		*FString(consumer_tag.c_str()), *FString(topic.c_str()), *FString(avatarCommandKey.c_str()));
-	//	
+		/*UE_LOG(LogLumen, Log, TEXT("Consuming %s (topic=%s routing=%s) ..."),
+			*FString(consumer_tag.c_str()), *FString(topic.c_str()), *FString(avatarCommandKey.c_str()));*/
+		UE_LOG(LogLumen, Log, TEXT("NaoCharacter %s"), *FString(
+			(boost::format("Consuming %1% (topic=%2% routing=%3%) ...") % consumer_tag % topic % avatarCommandKey).str().c_str()));
+		
 	//	//playing = true;
 	}
 	catch (const std::exception &e) {
