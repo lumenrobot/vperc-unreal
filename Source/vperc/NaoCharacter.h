@@ -3,7 +3,16 @@
 #pragma once
 
 #include "GameFramework/Character.h"
+#include <boost/numeric/ublas/vector.hpp>
+#include "SimpleAmqpClient/SimpleAmqpClient.h"
+#include "Avatar.hpp"
 #include "NaoCharacter.generated.h"
+
+DECLARE_LOG_CATEGORY_EXTERN(LogLumen, Log, All);
+
+using namespace boost::numeric;
+using namespace AmqpClient;
+using namespace lumen;
 
 UCLASS()
 class VPERC_API ANaoCharacter : public ACharacter
@@ -23,6 +32,27 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 
-	
-	
+	void onUpdate(double deltaTime/*seconds*/);
+
+private:
+	boost::shared_ptr<Avatar> avatar;
+	std::string consumer_tag;
+	Channel::ptr_t channel;
+
+	// Position animation
+	ublas::vector<double> positionDelta;
+	/**
+	* Intended duration of the animation.
+	*/
+	double positionDuration = 0.0;
+	/**
+	* Intended turn (CCW, degrees) of the position animation.
+	*/
+	double positionTurn = 0.0;
+	/**
+	* Remaining progress towards end of animation, from 1.0 to 0.0.
+	* if > 0 then this will be animated.
+	*/
+	double positionProgressRemaining = 0.0;
+
 };
