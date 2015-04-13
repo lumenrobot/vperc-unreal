@@ -65,12 +65,12 @@ void ANaoCharacter::BeginPlay()
 
 	UE_LOG(LogLumen, Log, TEXT("JSON: %s"), *FString(jsonStr.c_str()));
 
-	//std::string amqpUri("amqp://localhost");// "amqp://guest:guest@localhost/%2F";
-	//UE_LOG(LogLumen, Log, TEXT("Connecting AMQP '%s'..."), *FString(amqpUri.c_str()));
-	//try {
-	//	// IMPORTANT: You *MUST* compile SimpleAmqpClient as release, then put the mt (without gd) version of boost system + chrono in Binaries/Win64
-	//	// otherwise you'll get corrupted std::string. ~Hendy
-	//	channel = Channel::CreateFromUri(amqpUri);
+	std::string amqpUri("amqp://localhost");// "amqp://guest:guest@localhost/%2F";
+	UE_LOG(LogLumen, Log, TEXT("Connecting AMQP '%s'..."), *FString(amqpUri.c_str()));
+	try {
+		// IMPORTANT: You *MUST* compile SimpleAmqpClient as release, then put the mt (without gd) version of boost system + chrono in Binaries/Win64
+		// otherwise you'll get corrupted std::string. ~Hendy
+		channel = Channel::CreateFromUri(amqpUri);
 
 	//	string queue = channel->DeclareQueue("");
 	//	UE_LOG(LogLumen, Log, TEXT("Publishing to '%s'..."), *FString(queue.c_str()));
@@ -88,10 +88,10 @@ void ANaoCharacter::BeginPlay()
 	//		*FString(consumer_tag.c_str()), *FString(topic.c_str()), *FString(avatarCommandKey.c_str()));
 	//	
 	//	//playing = true;
-	//}
-	//catch (const std::exception &e) {
-	//	UE_LOG(LogLumen, Error, TEXT("Error: %s"), *FString(e.what()));
-	//}
+	}
+	catch (const std::exception &e) {
+		UE_LOG(LogLumen, Error, TEXT("Error: %s"), *FString(e.what()));
+	}
 }
 
 // Called every frame
@@ -102,9 +102,9 @@ void ANaoCharacter::Tick( float DeltaTime )
 	Super::Tick(DeltaTime);
 
 	//UE_LOG(LogLumen, Log, TEXT("NaoCharacter Deltatime %f"), DeltaTime);
-	//UE_LOG(LogLumen, Log, TEXT("NaoCharacter Avatar %s"), *FString(avatar->str().c_str()));
-	//FVector cur = GetActorLocation();
-	//SetActorLocation(FVector(cur.X, cur.Y + 10 * DeltaTime, cur.Z));
+	UE_LOG(LogLumen, Log, TEXT("NaoCharacter Avatar %s"), *FString(avatar->str().c_str()));
+	FVector cur = GetActorLocation();
+	SetActorLocation(FVector(cur.X, cur.Y + 10 * DeltaTime, cur.Z));
 
 	if (playing) {
 		Envelope::ptr_t envelope(NULL);
