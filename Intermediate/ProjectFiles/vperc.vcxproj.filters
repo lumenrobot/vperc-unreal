@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<ItemGroup>
+		<None Include="..\..\vperc.uproject" />
+		<Filter Include="Source">
+			<UniqueIdentifier>{3DFF8DDD-EC51-40B8-9618-48DAD752E4EB}</UniqueIdentifier>
+		</Filter>
+		<None Include="..\..\Source\vperc.Target.cs">
+			<Filter>Source</Filter>
+		</None >
+		<None Include="..\..\Source\vpercEditor.Target.cs">
+			<Filter>Source</Filter>
+		</None >
+		<Filter Include="Config">
+			<UniqueIdentifier>{7768A371-47D4-4914-A24A-22BA7F1479C0}</UniqueIdentifier>
+		</Filter>
+		<None Include="..\..\Config\DefaultEditor.ini">
+			<Filter>Config</Filter>
+		</None >
+		<None Include="..\..\Config\DefaultEngine.ini">
+			<Filter>Config</Filter>
+		</None >
+		<None Include="..\..\Config\DefaultInput.ini">
+			<Filter>Config</Filter>
+		</None >
+		<Filter Include="Source\vperc">
+			<UniqueIdentifier>{5311BF25-0D33-473C-8A84-7AF403F72700}</UniqueIdentifier>
+		</Filter>
+		<ClCompile Include="..\..\Source\vperc\Avatar.cpp">
+			<Filter>Source\vperc</Filter>
+		</ClCompile >
+		<None Include="..\..\Source\vperc\Avatar.hpp">
+			<Filter>Source\vperc</Filter>
+		</None >
+		<ClCompile Include="..\..\Source\vperc\JointInterpolateAngle.cpp">
+			<Filter>Source\vperc</Filter>
+		</ClCompile >
+		<None Include="..\..\Source\vperc\JointInterpolateAngle.hpp">
+			<Filter>Source\vperc</Filter>
+		</None >
+		<ClCompile Include="..\..\Source\vperc\MoveTo.cpp">
+			<Filter>Source\vperc</Filter>
+		</ClCompile >
+		<None Include="..\..\Source\vperc\MoveTo.hpp">
+			<Filter>Source\vperc</Filter>
+		</None >
+		<ClCompile Include="..\..\Source\vperc\NaoCharacter.cpp">
+			<Filter>Source\vperc</Filter>
+		</ClCompile >
+		<ClInclude Include="..\..\Source\vperc\NaoCharacter.h">
+			<Filter>Source\vperc</Filter>
+		</ClInclude >
+		<None Include="..\..\Source\vperc\vperc.Build.cs">
+			<Filter>Source\vperc</Filter>
+		</None >
+		<ClCompile Include="..\..\Source\vperc\vperc.cpp">
+			<Filter>Source\vperc</Filter>
+		</ClCompile >
+		<ClInclude Include="..\..\Source\vperc\vperc.h">
+			<Filter>Source\vperc</Filter>
+		</ClInclude >
+		<Filter Include="Source\vperc\Resources">
+			<UniqueIdentifier>{145E0302-CEDB-4C0D-AE23-0B34069B7688}</UniqueIdentifier>
+		</Filter>
+		<Filter Include="Source\vperc\Resources\Windows">
+			<UniqueIdentifier>{E0D9B501-510F-4EC5-9124-D9E43A97A4DF}</UniqueIdentifier>
+		</Filter>
+		<ResourceCompile Include="..\..\Source\vperc\Resources\Windows\vperc.rc">
+			<Filter>Source\vperc\Resources\Windows</Filter>
+		</ResourceCompile >
+	</ItemGroup>
+</Project>

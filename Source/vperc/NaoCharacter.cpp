@@ -56,44 +56,45 @@ void ANaoCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	using boost::property_tree::ptree;
-	ptree pt;
-	pt.put("Halo", "juga");
-	stringstream ss;
-	boost::property_tree::json_parser::write_json(ss, pt, true);
-	string jsonStr = ss.str();
+
+	//ptree pt;
+	//pt.put("Halo", "juga");
+	//stringstream ss;
+	//boost::property_tree::json_parser::write_json(ss, pt, true);
+	//string jsonStr = ss.str();
 	//cout << "JSON: " << jsonStr << endl;
 
-	UE_LOG(LogLumen, Log, TEXT("JSON: %s"), *FString(jsonStr.c_str()));
+	//UE_LOG(LogLumen, Log, TEXT("JSON: %s"), UTF8_TO_TCHAR(jsonStr.c_str()));
 
 	std::string amqpUri("amqp://localhost");// "amqp://guest:guest@localhost/%2F";
-	UE_LOG(LogLumen, Log, TEXT("Connecting AMQP '%s'..."), *FString(amqpUri.c_str()));
-	try {
+	//UE_LOG(LogLumen, Log, TEXT("Connecting AMQP '%s'..."), UTF8_TO_TCHAR(amqpUri.c_str()));
+	//try {
 		// IMPORTANT: You *MUST* compile SimpleAmqpClient as release, then put the mt (without gd) version of boost system + chrono in Binaries/Win64
 		// otherwise you'll get corrupted std::string. ~Hendy
 		channel = Channel::CreateFromUri(amqpUri);
 
 		string queue = channel->DeclareQueue("");
-		UE_LOG(LogLumen, Log, TEXT("Publishing to '%s'..."), *FString(queue.c_str()));
+		//UE_LOG(LogLumen, Log, TEXT("Publishing to '%s'..."), UTF8_TO_TCHAR(queue.c_str()));
 		BasicMessage::ptr_t message = BasicMessage::Create("wah keren");
 		channel->BasicPublish("", queue, message);
 
-		string avatarCommandQueue;
-		channel->DeclareQueue(avatarCommandQueue);
-		UE_LOG(LogLumen, Log, TEXT("Declared queue '%s'"), *FString(avatarCommandQueue.c_str()));
+		string avatarCommandQueue = channel->DeclareQueue("");
+		string declLog = (boost::format("Declared queue %1%") % avatarCommandQueue).str();
+		//UE_LOG(LogLumen, Log, TEXT("NaoCharacter %s"), UTF8_TO_TCHAR(declLog.c_str())); 
 		string topic = "amq.topic";
 		string avatarCommandKey = "avatar.NAO.command";
 		channel->BindQueue(avatarCommandQueue, topic, avatarCommandKey);
 		consumer_tag = channel->BasicConsume(avatarCommandQueue, "");
 		/*UE_LOG(LogLumen, Log, TEXT("Consuming %s (topic=%s routing=%s) ..."),
 			*FString(consumer_tag.c_str()), *FString(topic.c_str()), *FString(avatarCommandKey.c_str()));*/
-		UE_LOG(LogLumen, Log, TEXT("NaoCharacter %s"), *FString(
-			(boost::format("Consuming %1% (topic=%2% routing=%3%) ...") % consumer_tag % topic % avatarCommandKey).str().c_str()));
+		string consLog = (boost::format("Consuming %1% (topic=%2% routing=%3%) ...") % consumer_tag % topic % avatarCommandKey).str();
+		//UE_LOG(LogLumen, Log, TEXT("NaoCharacter %s"), UTF8_TO_TCHAR(consLog.c_str()));
 		
-	//	//playing = true;
-	}
+		//playing = true;
+	/*}
 	catch (const std::exception &e) {
-		UE_LOG(LogLumen, Error, TEXT("Error: %s"), *FString(e.what()));
-	}
+		UE_LOG(LogLumen, Error, TEXT("Error: %s"), UTF8_TO_TCHAR(e.what()));
+	}*/
 }
 
 // Called every frame
@@ -104,7 +105,7 @@ void ANaoCharacter::Tick( float DeltaTime )
 	Super::Tick(DeltaTime);
 
 	//UE_LOG(LogLumen, Log, TEXT("NaoCharacter Deltatime %f"), DeltaTime);
-	UE_LOG(LogLumen, Log, TEXT("NaoCharacter Avatar %s"), *FString(avatar->str().c_str()));
+	//UE_LOG(LogLumen, Log, TEXT("NaoCharacter Avatar %s"), *FString(avatar->str().c_str()));
 	FVector cur = GetActorLocation();
 	SetActorLocation(FVector(cur.X, cur.Y + 10 * DeltaTime, cur.Z));
 
