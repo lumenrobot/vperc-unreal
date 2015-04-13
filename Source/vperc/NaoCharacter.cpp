@@ -77,13 +77,13 @@ void ANaoCharacter::BeginPlay()
 		BasicMessage::ptr_t message = BasicMessage::Create("wah keren");
 		channel->BasicPublish("", queue, message);
 
-	//	string avatarCommandQueue;
-	//	channel->DeclareQueue(avatarCommandQueue);
-	//	UE_LOG(LogLumen, Log, TEXT("Declared queue '%s'"), *FString(avatarCommandQueue.c_str()));
-	//	string topic = "amq.topic";
-	//	string avatarCommandKey = "avatar.NAO.command";
-	//	channel->BindQueue(avatarCommandQueue, topic, avatarCommandKey);
-	//	consumer_tag = channel->BasicConsume(avatarCommandQueue, "");
+		string avatarCommandQueue;
+		channel->DeclareQueue(avatarCommandQueue);
+		UE_LOG(LogLumen, Log, TEXT("Declared queue '%s'"), *FString(avatarCommandQueue.c_str()));
+		string topic = "amq.topic";
+		string avatarCommandKey = "avatar.NAO.command";
+		channel->BindQueue(avatarCommandQueue, topic, avatarCommandKey);
+		consumer_tag = channel->BasicConsume(avatarCommandQueue, "");
 	//	UE_LOG(LogLumen, Log, TEXT("Consuming %s (topic=%s routing=%s) ..."),
 	//		*FString(consumer_tag.c_str()), *FString(topic.c_str()), *FString(avatarCommandKey.c_str()));
 	//	
