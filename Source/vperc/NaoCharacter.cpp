@@ -67,28 +67,28 @@ void ANaoCharacter::BeginPlay()
 	//UE_LOG(LogLumen, Log, TEXT("JSON: %s"), UTF8_TO_TCHAR(jsonStr.c_str()));
 
 	std::string amqpUri("amqp://localhost");// "amqp://guest:guest@localhost/%2F";
-	//UE_LOG(LogLumen, Log, TEXT("Connecting AMQP '%s'..."), UTF8_TO_TCHAR(amqpUri.c_str()));
+	UE_LOG(LogLumen, Log, TEXT("Connecting AMQP '%s'..."), UTF8_TO_TCHAR(amqpUri.c_str()));
 	//try {
 		// IMPORTANT: You *MUST* compile SimpleAmqpClient as release, then put the mt (without gd) version of boost system + chrono in Binaries/Win64
 		// otherwise you'll get corrupted std::string. ~Hendy
 		channel = Channel::CreateFromUri(amqpUri);
 
 		string queue = channel->DeclareQueue("");
-		//UE_LOG(LogLumen, Log, TEXT("Publishing to '%s'..."), UTF8_TO_TCHAR(queue.c_str()));
+		UE_LOG(LogLumen, Log, TEXT("Publishing to '%s'..."), UTF8_TO_TCHAR(queue.c_str()));
 		BasicMessage::ptr_t message = BasicMessage::Create("wah keren");
 		channel->BasicPublish("", queue, message);
 
 		string avatarCommandQueue = channel->DeclareQueue("");
 		string declLog = (boost::format("Declared queue %1%") % avatarCommandQueue).str();
-		//UE_LOG(LogLumen, Log, TEXT("NaoCharacter %s"), UTF8_TO_TCHAR(declLog.c_str())); 
-		string topic = "amq.topic";
-		string avatarCommandKey = "avatar.NAO.command";
-		channel->BindQueue(avatarCommandQueue, topic, avatarCommandKey);
-		consumer_tag = channel->BasicConsume(avatarCommandQueue, "");
-		/*UE_LOG(LogLumen, Log, TEXT("Consuming %s (topic=%s routing=%s) ..."),
-			*FString(consumer_tag.c_str()), *FString(topic.c_str()), *FString(avatarCommandKey.c_str()));*/
-		string consLog = (boost::format("Consuming %1% (topic=%2% routing=%3%) ...") % consumer_tag % topic % avatarCommandKey).str();
-		//UE_LOG(LogLumen, Log, TEXT("NaoCharacter %s"), UTF8_TO_TCHAR(consLog.c_str()));
+		UE_LOG(LogLumen, Log, TEXT("NaoCharacter %s"), UTF8_TO_TCHAR(declLog.c_str())); 
+	//	string topic = "amq.topic";
+	//	string avatarCommandKey = "avatar.NAO.command";
+	//	channel->BindQueue(avatarCommandQueue, topic, avatarCommandKey);
+	//	consumer_tag = channel->BasicConsume(avatarCommandQueue, "");
+	//	/*UE_LOG(LogLumen, Log, TEXT("Consuming %s (topic=%s routing=%s) ..."),
+	//		*FString(consumer_tag.c_str()), *FString(topic.c_str()), *FString(avatarCommandKey.c_str()));*/
+	//	string consLog = (boost::format("Consuming %1% (topic=%2% routing=%3%) ...") % consumer_tag % topic % avatarCommandKey).str();
+	//	//UE_LOG(LogLumen, Log, TEXT("NaoCharacter %s"), UTF8_TO_TCHAR(consLog.c_str()));
 		
 		//playing = true;
 	/*}
